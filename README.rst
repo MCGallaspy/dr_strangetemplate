@@ -25,7 +25,9 @@ So let's begin:
 Case Study 1: Consuming a C API
 -------------------------------
 
-Imagine that I have a library with several functions as such::
+Imagine that I have a library with several functions as such:
+
+.. code:: c++
 
     int alpha(MyCoolStruct *input, int param1, int param2);
     int beta(MyCoolStruct *input, int param1, int param2);
@@ -34,7 +36,9 @@ Imagine that I have a library with several functions as such::
 
 Each function returns an ``int`` error code -- ``0`` represents no error, and other integers indicate some
 library-specific error which you can compare to a slew of macros from a header file. You might consume this API,
-observing proper error handling and logging as follows::
+observing proper error handling and logging as follows:
+
+.. code:: c++
 
     int err = alpha(foo, 4, 2);
     if (err != 0) {
@@ -66,7 +70,9 @@ after you've added hundreds of calls and decides that *some* API calls should be
 we can judiciously use ``std::future`` as well.
 
 So you find yourself sweating laboriously over your keyboard, doing tedious and undignified copy-and-paste,
-search-and-replace, and testing each change over and over again. But child... there is a better way!::
+search-and-replace, and testing each change over and over again. But child... there is a better way!
+
+.. code:: c++
 
     apiExec(alpha,
     /* on success */ [&foo](){
