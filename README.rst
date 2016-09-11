@@ -25,41 +25,38 @@ So let's begin:
 Case Study 1: Consuming a C API
 -------------------------------
 
-Imagine that I have a library with several functions as such:
+Imagine that I have a library with several functions as such::
 
-```c
-int alpha(MyCoolStruct *input, int param1, int param2);
-int beta(MyCoolStruct *input, int param1, int param2);
-int gamma(MyCoolStruct *input);
-int delta(MyCoolStruct *input, int param1, int param2, int param3);
-```
+    int alpha(MyCoolStruct *input, int param1, int param2);
+    int beta(MyCoolStruct *input, int param1, int param2);
+    int gamma(MyCoolStruct *input);
+    int delta(MyCoolStruct *input, int param1, int param2, int param3);
 
 Each function returns an ``int`` error code -- ``0`` represents no error, and other integers indicate some
 library-specific error which you can compare to a slew of macros from a header file. You might consume this API,
-observing proper error handling and logging as follows:
+observing proper error handling and logging as follows::
 
-```c++
-int err = alpha(foo, 4, 2);
-if (err != 0) {
-    log("alpha returned error code %d!", err);
-    panicAndCry();
-} else {
-    actCasualWithMyFoo(foo);
-}
+    int err = alpha(foo, 4, 2);
+    if (err != 0) {
+        log("alpha returned error code %d!", err);
+        panicAndCry();
+    } else {
+        actCasualWithMyFoo(foo);
+    }
 
-// ... in some other file
+    // ... in some other file
 
-int err = gamma(foo);
-if (err == 0) {
-    suchGreatFoo(foo);
-} else if (err == 1) {
-    log("gamma returned ERR_THEY_REALLY_DID_IT!");
-    awaitTheInevitable();
-} else {
-    log("gamma returned %d, what could it mean?", err);
-    ponderTheMystery();
-}
-```
+    int err = gamma(foo);
+    if (err == 0) {
+        suchGreatFoo(foo);
+    } else if (err == 1) {
+        log("gamma returned ERR_THEY_REALLY_DID_IT!");
+        awaitTheInevitable();
+    } else {
+        log("gamma returned %d, what could it mean?", err);
+        ponderTheMystery();
+    }
+
 And so on, and so on. You'll write tons of code like this. Sometimes you won't be able to do anything meaningful with
 an error, so you just log it and move on. Maybe in some cases you'll want to change the behavior on success -- for
 instance if a call to ``delta`` succeeds then you want to handle it in another thread without blocking the calling
@@ -69,21 +66,19 @@ after you've added hundreds of calls and decides that *some* API calls should be
 we can judiciously use ``std::future`` as well.
 
 So you find yourself sweating laboriously over your keyboard, doing tedious and undignified copy-and-paste,
-search-and-replace, and testing each change over and over again. But child... there is a better way!
+search-and-replace, and testing each change over and over again. But child... there is a better way!::
 
-```c++
-apiExec(alpha,
-/* on success */ [&foo](){
-    actCasualWithMy(foo);
-},
-/* on error */ logIt,
-/* params */ foo, 4, 2);
+    apiExec(alpha,
+    /* on success */ [&foo](){
+        actCasualWithMy(foo);
+    },
+    /* on error */ logIt,
+    /* params */ foo, 4, 2);
 
-apiAsyncExec(beta,
-/* on success */ suchGreatFoo,  // foo is passed automatically to this
-/* on error */ logIt,
-/* params */ foo);
-```
+    apiAsyncExec(beta,
+    /* on success */ suchGreatFoo,  // foo is passed automatically to this
+    /* on error */ logIt,
+    /* params */ foo);
 
 And so on, and so on. This leads to our first take on templates: *templates are functions of functions*. So how do we
 write something like this? We'll start by implementing a basic `apiExec` template and gradually add more bells and
