@@ -12,7 +12,7 @@ metaprogramming have their use in library code (as with the venerable ``std::vec
 surely are a code smell anywhere else.
 
 But no more! We live in a more enlightened age, and it's time to recognize the noble and simple truth of C++
-templates: *they help you write less code*. Moreover with modern C++ features, template code is as readable and
+templates: **they help you write less code**. Moreover with modern C++ features, template code is as readable and
 maintainable as any other code. Template code has other advantages and disadvantages -- a well-rounded C++ programmer
 should be able to identify when templates will help and when they will hinder.
 
@@ -86,11 +86,12 @@ search-and-replace, and testing each change over and over again. But child... th
     /* on error */ logIt,
     /* params */ foo);
 
-And so on, and so on. This leads to our first take on templates: *templates are functions of functions*. So how do we
+And so on, and so on. This leads to our first take on templates: **templates are functions of functions**. So how do we
 write something like this? We'll start by implementing a basic `apiExec` template and gradually add more bells and
 whistles to it.
 
 .. code:: c++
+
     // case_study_1.hpp
     
     template<typename... Args>
@@ -120,3 +121,25 @@ whistles to it.
     Got error: Mysterious unknown error!!
     Much success.
     */
+
+There are two important things to note here:
+#. ``apiExec`` is a variadic template.
+#. The first parameter of ``apiExec`` is a function type.
+
+Understanding variadic templates and function types unlocks the basic techniques in case study 1.
+
+A **variadic template** is a template that takes a variable number of template parameters. If you've used templates
+before you may know that a *template parameter* is a type[#]_ like ``int`` or ``MyCoolStruct``.
+So a variadic template just takes some variable
+number of types that you don't have to specify. A parameter pack can be expanded and used in a template as with 
+``Args...`` and can be
+named as with ``Args... args``. In this case ``Args...`` corresponds to the *types* of the parameters and ``args``
+correponds to the actual *values* that we passed in. This leads to the second point.
+
+A **function type** is how you pass functions as parameters in C++. In this case the parameter ``int func(Args...)``
+means that we take a function that returns an ``int`` and takes the types denoted by ``Args...`` as parameters,
+and we call this
+function parameter ``func``. For instance, when we call ``apiExec(alpha, &foo, 1, 2)`` this type is expanded to
+``int func(int, int)`` and when we call ``apiExec(gamma, &foo)`` it expands to ``int func(void)``.
+
+.. [#] Not always, but sometimes we lie to ourselves for simplicity.
