@@ -1,3 +1,4 @@
+#include <stdio.h>
 
 
 /* The hypothetical C API */
@@ -29,4 +30,20 @@ int gamma(MyCoolStruct *input) {
 int delta(MyCoolStruct *input, int param1, int param2, int param3) {
     input->b = param1 + param2 + param3;
     return 0;
+}
+
+
+/* Our code */
+
+template<typename... Args>
+void apiExec(int func(Args...), Args... args) {
+    int err = func(args...);
+    if (err == 0) {
+        printf("Much success.\n");
+    } else {
+        printf("Got error: %s!\n",
+            err == ERR_THEY_REALLY_DID_IT ? "They really did it!" :
+            err == ERR_UNKNOWN ? "Mysterious unknown error!" : ""
+        );
+    }   
 }

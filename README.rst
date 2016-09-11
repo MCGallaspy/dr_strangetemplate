@@ -89,3 +89,34 @@ search-and-replace, and testing each change over and over again. But child... th
 And so on, and so on. This leads to our first take on templates: *templates are functions of functions*. So how do we
 write something like this? We'll start by implementing a basic `apiExec` template and gradually add more bells and
 whistles to it.
+
+.. code:: c++
+    // case_study_1.hpp
+    
+    template<typename... Args>
+    void apiExec(int func(Args...), Args... args) {
+        int err = func(args...);
+        if (err == 0) {
+            printf("Much success.\n");
+        } else {
+            printf("Got error: %s!\n",
+                err == ERR_THEY_REALLY_DID_IT ? "They really did it!" :
+                err == ERR_UNKNOWN ? "Mysterious unknown error!" : ""
+            );
+        }   
+    }
+
+    // case_study_1.cpp
+    
+    MyCoolStruct foo;
+    apiExec(alpha, &foo, 1, 2);
+    apiExec(beta, &foo, 3, 4);
+    apiExec(gamma, &foo);
+    apiExec(delta, &foo, 5, 6, 7);
+    
+    /* $ ./case_study_1.exe
+    Much success.
+    Got error: They really did it!!
+    Got error: Mysterious unknown error!!
+    Much success.
+    */
