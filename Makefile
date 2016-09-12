@@ -1,4 +1,4 @@
-GPP_CMD = g++ -Wall -Werror -std=c++14
+GPP_CMD = g++ -Wall -Werror -std=c++17
 
 all: case_study_1
 

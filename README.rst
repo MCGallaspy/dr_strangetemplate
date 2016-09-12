@@ -211,3 +211,8 @@ is the non-integral ``double`` and generate an error. (Try it out!)
 Note the keyword **typename** in the ``typedef``. Whenever you use a template inside of another template, you have to
 help the compiler deduce that the template is in fact a *type* (and not a regular old undefined name) by prefixing it
 with ``typename``. Don't confuse this with the use of ``typename`` in the template parameters -- they are unrelated.
+
+Finally let's write something that takes success and error callbacks:
+
+.. code:: c++
+
