@@ -1,3 +1,6 @@
+#include <functional>
+#include <type_traits>
+
 #include <stdio.h>
 
 
@@ -35,8 +38,11 @@ int delta(MyCoolStruct *input, int param1, int param2, int param3) {
 
 /* Our code */
 
-template<typename... Args>
-void apiExec(int func(Args...), Args... args) {
+template<typename Function, typename... Args>
+void apiExec(Function func, Args... args) {
+    typedef typename std::result_of<Function(Args...)>::type ReturnType;
+    static_assert(std::is_integral<ReturnType>::value, "Please only call me with integral types!");
+    
     int err = func(args...);
     if (err == 0) {
         printf("Much success.\n");
