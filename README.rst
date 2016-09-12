@@ -87,7 +87,7 @@ search-and-replace, and testing each change over and over again. But child... th
     /* params */ foo);
 
 And so on, and so on. This leads to our first take on templates: **templates are functions of functions**. So how do we
-write something like this? We'll start by implementing a basic `apiExec` template and gradually add more bells and
+write something like this? We'll start by implementing a basic ``apiExec`` template and gradually add more bells and
 whistles to it.
 
 .. code:: c++
@@ -123,6 +123,7 @@ whistles to it.
     */
 
 There are two important things to note here:
+
 #. ``apiExec`` is a variadic template.
 #. The first parameter of ``apiExec`` is a function type.
 
