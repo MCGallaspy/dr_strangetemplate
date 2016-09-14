@@ -91,9 +91,11 @@ search-and-replace, and testing each change over and over again. Dear beleaguere
     logIt, /* on error */
     foo); /* params */
 
-And so on, and so on.
+Everything just described can be achieved with templates!
+Easy refactoring, easily changeable success/error behavior, and the ability to select totally different behavior
+by using a different template.
 This leads to our first take on templates: **templates are functions that create more functions**.
-By writing one template function we create a new ``apiExec`` for every api function that we have.
+By writing one template function we create a new ``apiExec`` for potentially every api function that we have.
 So how do we write something like this?
 We'll start by implementing a basic ``apiExec`` template and gradually add more bells and whistles to it.
 
@@ -170,7 +172,7 @@ Let it! It's what compilers love to do.
 Abandon all hope, ye who enter here! a.k.a. an intermission
 ***********************************************************
 
-**Stop!**
+Stop!
 
 Variadic templates are a feature introduced in C++11 and they're really powerful.
 But they also introduce complexity.
@@ -179,8 +181,8 @@ You can get a lot of mileage out of basic templates like above.
 So stop here in your brave march towards template modernity, unless you want to learn about **metaprogramming**
 and write *even less code*.
 
-Back to your regular program
-****************************
+Back to your regular program(ming)
+**********************************
 
 There is one caveat to our first example -- because built-in numeric types are implicitly convertible from one to
 another, the compiler will quietly do stuff like this:
@@ -193,7 +195,7 @@ another, the compiler will quietly do stuff like this:
 
     apiExec(epsilon); // no error here!
 
-This isn't always undesirable behavior -- but since our API *always* returns ``int`` anyway we may as well nip some
+This isn't always undesirable behavior -- but since our C API *always* returns ``int`` anyway we may as well nip some
 weird mistake in the bud by creating a compiler error when you try to do silly stuff like above:
 
 .. code:: c++
@@ -215,7 +217,7 @@ weird mistake in the bud by creating a compiler error when you try to do silly s
         }   
     }
 
-``static_assert`` will generate a compiler error if it's value is ``false``. It doesn't do anything at *all* at
+``static_assert`` will generate a compiler error if its value is ``false``. It doesn't do anything at *all* at
 runtime, so you should basically use it like it's going out of style to keep your code type-safe and readable.
 
 More interesting is the expression ``std::is_integral<ReturnType>::value``.
