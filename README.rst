@@ -12,15 +12,20 @@ metaprogramming have their use in library code (as with the venerable ``std::vec
 surely are a code smell anywhere else.
 
 But no more! We live in a more enlightened age, and it's time to recognize the noble and simple truth of C++
-templates: **they help you write less code**. Moreover with modern C++ features, template code is as readable and
-maintainable as any other code. Template code has other advantages and disadvantages -- a well-rounded C++ programmer
-should be able to identify when templates will help and when they will hinder.
+templates: **they help you write less code**. Moreover with modern C++ features, template code is as readable,
+maintainable, sustainable [#]_, biodegradable [#]_, and fully embraceable [#]_!
+A well-rounded C++ programmer should be able to identify when to use this powerful language feature.
 
 What follows is a guide on writing practical, maintainable C++ template code.
 It is divided into case-studies of (more-or-less) real code that I have seen running freely in the wild, waiting to
-be boldly elevated into template modernity. Each section provides a different take on how to use templates.
+be boldly elevated into template modernity.
 So let's begin:
 
+.. [#] In a manner of speaking.
+
+.. [#] Actually not.
+
+.. [#] But this part is true.
 
 Case Study 1: Consuming a C API
 -------------------------------
@@ -63,11 +68,11 @@ observing proper error handling and logging as follows:
 
 And so on, and so on. You'll write tons of code like this. Sometimes you won't be able to do anything meaningful with
 an error, so you just log it and move on. Maybe in some cases you'll want to change the behavior on success -- for
-instance if a call to ``delta`` succeeds then you want to handle it in another thread without blocking the calling
-thread. And then a few weeks later your supervisor decides you should do this with ``gamma`` as well. And then your
-supervisor decides that all API calls should be called and handled asynchronously, but reconsiders a few months
-after you've added hundreds of calls and decides that *some* API calls should be handled asynchronously, oh and maybe
-we can judiciously use ``std::future`` as well.
+instance if a call to ``delta`` succeeds then you want to handle it in another thread.
+And then a few weeks later your supervisor decides you should do this with ``gamma`` as well.
+And then that all API calls should be handled asynchronously on success, but reconsiders a few weeks
+after you've added hundreds of calls and decides that only API calls starting with the letter ``b`` should be
+handled synchronously.
 
 So you find yourself sweating laboriously over your keyboard, doing tedious and undignified copy-and-paste,
 search-and-replace, and testing each change over and over again. Dear beleaguered programmer... there is a better way!
@@ -75,22 +80,22 @@ search-and-replace, and testing each change over and over again. Dear beleaguere
 .. code:: c++
 
     apiExec(alpha,
-    /* on success */ [&foo](){
+    [&foo](){ /* on success */ 
         actCasualWithMy(foo);
     },
-    /* on error */ logIt,
-    /* params */ foo, 4, 2);
+    logIt, /* on error */
+    foo, 4, 2); /* params */
 
     apiAsyncExec(beta,
-    /* on success */ suchGreatFoo,  // foo is passed automatically to this
-    /* on error */ logIt,
-    /* params */ foo);
+    actCasualWithMyFoo,  /* on success - foo is passed automatically to this function */
+    logIt, /* on error */
+    foo); /* params */
 
-And so on, and so on. This leads to our first take on templates:
-**templates are functions that create more functions**.
-So how do we
-write something like this? We'll start by implementing a basic ``apiExec`` template and gradually add more bells and
-whistles to it.
+And so on, and so on.
+This leads to our first take on templates: **templates are functions that create more functions**.
+By writing one template function we create a new ``apiExec`` for every api function that we have.
+So how do we write something like this?
+We'll start by implementing a basic ``apiExec`` template and gradually add more bells and whistles to it.
 
 .. code:: c++
 
@@ -124,30 +129,25 @@ whistles to it.
     Much success.
     */
 
-There are two important things to note here:
+That's it! Note two things here:
 
 #. ``apiExec`` is a variadic template.
-#. The first parameter of ``apiExec`` is a function type.
+#. The first parameter of ``apiExec`` is some weird function type.
 
-Understanding variadic templates and function types unlocks the basic techniques in case study 1.
-
-A **variadic template** is a template that takes a variable number of template parameters. If you've used templates
+A **variadic template** is a template that takes a variable number of template parameters [#]_. If you've used templates
 before you may know that a *template parameter* is a type [#]_ like ``int`` or ``MyCoolStruct``.
-So a variadic template just takes some variable
-number of types that you don't have to specify. A parameter pack can be expanded and used in a template as with 
-``Args...`` and can be
-named as with ``Args... args``. In this case ``Args...`` corresponds to the *types* of the parameters and ``args``
-correponds to the actual *values* that we passed in. This leads to the second point.
+So a variadic template just takes some variable number of types that you don't have to specify.
+A variadic template's *parameter pack* can be expanded with ``Args...`` and used as a function parameter with 
+``Args... args``. In this case ``Args...`` corresponds to the *types* of the parameters and ``args``
+correponds to the actual *values* that we passed in.
 
-.. [#] Not always, but sometimes we lie to ourselves for simplicity.
+.. [#] Kinda like regular variadic functions.
 
-A **function type** is how you pass functions as parameters in C++. In this case the parameter ``int func(Args...)``
-means that we take a function that returns an ``int`` and takes the types denoted by ``Args...`` as parameters,
-and we call this
-function parameter ``func``. For instance, when we call ``apiExec(alpha, &foo, 1, 2)`` this type is expanded to
-``int func(MyCoolStruct*, int, int)`` and when we call ``apiExec(gamma, &foo)`` it expands to
-``int func(MyCoolStruct*)``.
-The very first rule of function types is that *you shouldn't use a function type at all if you don't have to*:
+.. [#] Actually a template parameter can also be an integral type, e.g. ``template <int N>``, another template,
+    and some other stuff too. Czech it out!
+
+Regarding the second point, the first rule of weird function types is that *you shouldn't use a function type at
+all if you don't have to*:
 
 .. code:: c++
 
@@ -164,9 +164,26 @@ The very first rule of function types is that *you shouldn't use a function type
         }   
     }
     
-Whoa. Take a look at that, sport. Your compiler can deduce the type of ``func`` automatically.
-There is one caveat here -- because primitive numeric types are implicitly convertible from one to another, the
-compiler will quietly do stuff like this:
+Whoa. Your compiler can deduce the type of ``func`` automatically when you pass it in.
+Let it! It's what compilers love to do.
+
+Abandon all hope, ye who enter here! a.k.a. an intermission
+***********************************************************
+
+**Stop!**
+
+Variadic templates are a feature introduced in C++11 and they're really powerful.
+But they also introduce complexity.
+So do the rest of the features considered below.
+You can get a lot of mileage out of basic templates like above.
+So stop here in your brave march towards template modernity, unless you want to learn about **metaprogramming**
+and write *even less code*.
+
+Back to your regular program
+****************************
+
+There is one caveat to our first example -- because built-in numeric types are implicitly convertible from one to
+another, the compiler will quietly do stuff like this:
 
 .. code:: c++
 
@@ -200,19 +217,74 @@ weird mistake in the bud by creating a compiler error when you try to do silly s
 
 ``static_assert`` will generate a compiler error if it's value is ``false``. It doesn't do anything at *all* at
 runtime, so you should basically use it like it's going out of style to keep your code type-safe and readable.
-In this case, ``std::is_integral<ReturnType>::value`` is a neat meta-programming construct that returns ``true`` if
-the type ``ReturnType`` is (you guessed it) intergral like ``int`` or ``const int``.
 
-``ReturnType`` itself is just a ``typedef`` alias of ``std::result_of<Function(Args...)>::type``, which is another
-neat meta-programming construct that returns the type of what you would get by calling ``Function`` with the types
-denoted by ``Args...``. So for example with ``apiExec(epsilon)`` the compiler will deduce ``epsilon``'s return type
-is the non-integral ``double`` and generate an error. (Try it out!)
+More interesting is the expression ``std::is_integral<ReturnType>::value``.
+``std::is_integral`` is a *metafunction* that returns ``true`` if the type ``ReturnType`` is (you guessed it) 
+intergral [#]_. This is our first example of *metaprogramming*! Turns out C++'s template system is a complete
+programming language in itself. You can write programs evaluated at compile time that write your runtime program
+for you [#]_!
 
-Note the keyword **typename** in the ``typedef``. Whenever you use a template inside of another template, you have to
-help the compiler deduce that the template is in fact a *type* (and not a regular old undefined name) by prefixing it
-with ``typename``. Don't confuse this with the use of ``typename`` in the template parameters -- they are unrelated.
+.. [#] Like ``int`` or ``const int``.
+
+.. [#] By generating code. It also turns out you can make a trade-off by turning some runtime computations into
+    compile-time computations, although since C++11 it's much easier to do this with `constexpr` than with
+    template metaprogramming.
+
+Metafunctions take template parameters and the result is a type.
+Sometimes you are interested in the type itself, but in the case of ``is_integral`` we're actually interested in the
+``bool`` value it returns.
+By convention metafunction return values can be accessed by the static class variable ``value``:
+
+.. code:: c++
+
+    std::is_integral<int>::value; // true
+    std::is_integral<double>::value; // false
+    std::is_integral<int>; // this is actually a class, and not a valid statement.
+ 
+Now consider the previous line:
+
+.. code:: c++
+
+    typedef typename std::result_of<Function(Args...)>::type ReturnType;
+
+``typedef`` is the equivalent of assigning a variable in metaprogramming, and ``ReturnType`` is the type name we're 
+assigning it to.
+``std::result_of`` is a metafunction that returns the type of whatever ``Function`` would be if applied to 
+``Args...`` [#]_.
+Just like a metafunction's value can be accessed with ``::value``, by convention if it's the type we're interested in
+we access it through ``::type``: ``std::result_of<Function(Args...)>::type``.
+Finally we have to let the compiler know that an expression is a type and not a value, which you do with the keyword
+``typename`` -- it's an unrelated double use of the keyword that appears in template parameter lists [#]_.
+
+.. [#] If ``Function`` is not actually a function then gcc will raise an error with C++11 and do some magic with
+    SFINAE starting in C++14... we'll talk more about SFINAE later.
+    
+.. [#] Like ``template <typename Unrelated>``.
+
+Whenever you use a template inside of another template, you generally have to help the compiler deduce that the
+template is in fact a *type* by prefixing it with ``typename``. So basically if you don't call it with ``::value``
+then you should use ``typename``.
+
+My mother said SFINAE is not a polite word
+******************************************
 
 Finally let's write something that takes success and error callbacks:
 
 .. code:: c++
 
+    template<
+    typename Function,
+    typename OnSuccess,
+    typename OnError,
+    typename... Args>
+    void apiExec(Function func, OnSuccess on_success, OnError on_error, Args... args) {
+        typedef typename std::result_of<Function(Args...)>::type ReturnType;
+        static_assert(std::is_integral<ReturnType>::value, "Please only call me with integral types!");
+        
+        int err = func(args...);
+        if (err == 0) {
+            on_success();
+        } else {
+            on_error(err);
+        }
+    }

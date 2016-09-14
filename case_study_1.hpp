@@ -104,5 +104,3 @@ void apiExec(Function func, Args... args) {
         print_error(err);
     }   
 }
-
-
