@@ -209,7 +209,7 @@ runtime, so you should basically use it like it's going out of style to keep you
 
 More interesting is the expression ``std::is_integral<ReturnType>::value``.
 ``std::is_integral`` is a *metafunction* that returns ``true`` if the type ``ReturnType`` is (you guessed it) 
-intergral [#]_. This is our first example of metaprogramming!
+integral [#]_. This is our first example of metaprogramming!
 
 Metafunctions take template parameters and the result is either another type or a constant value.
 In the case of ``is_integral`` we're interested in the ``bool`` value it returns, which 
@@ -515,8 +515,7 @@ raise. ;)
 
 .. [#] Like ``int`` or ``const int``.
 
-.. [#] If ``Function`` is not actually a function then gcc will raise an error with C++11 and do some magic with
-    SFINAE starting in C++14... we'll talk more about SFINAE later.
+.. [#] If ``Function`` is not actually a function then gcc will raise an error with C++11.
     
 .. [#] Like ``template <typename Unrelated>``.
 
