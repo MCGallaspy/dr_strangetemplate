@@ -21,12 +21,6 @@ It is divided into case-studies of (more-or-less) real code that I have seen run
 be boldly elevated into template modernity.
 So let's begin:
 
-.. [#] In a manner of speaking.
-
-.. [#] Actually not.
-
-.. [#] But this part is true.
-
 Case Study 1: Consuming a C API
 -------------------------------
 
@@ -141,11 +135,6 @@ A variadic template's *parameter pack* can be expanded with ``Args...`` and used
 ``Args... args``. In this case ``Args...`` corresponds to the *types* of the parameters and ``args``
 correponds to the actual *values* that we passed in.
 
-.. [#] Kinda like regular variadic functions.
-
-.. [#] Actually a template parameter can also be an integral type, e.g. ``template <int N>``, another template,
-    and some other stuff too. Czech it out!
-
 Regarding the second point, the first rule of weird function types is that *you shouldn't use a function type at
 all if you don't have to*:
 
@@ -180,9 +169,6 @@ You can get a lot of mileage out of basic templates like above.
 But if you understand metaprogramming techniques you can make good use of the standard library [#]_, libraries like
 `boost::hana <http://www.boost.org/doc/libs/1_61_0/libs/hana/doc/html/index.html>`_,
 and even write your own metafunctions for great profit.
-
-.. [#] The standard library provides metafunctions in the ``type_traits`` header, and support only gets better in
-    C++14, C++17, and undoubtedly future versions as well.
 
 Back to your regular program(ming)
 **********************************
@@ -229,12 +215,6 @@ intergral [#]_. This is our first example of *metaprogramming*! Turns out C++'s 
 programming language in itself. You can write programs evaluated at compile time that write your runtime program
 for you [#]_!
 
-.. [#] Like ``int`` or ``const int``.
-
-.. [#] By generating code. It also turns out you can make a trade-off by turning some runtime computations into
-    compile-time computations, although since C++11 it's much easier to do this with `constexpr` than with
-    template metaprogramming.
-
 Metafunctions take template parameters and the result is either another type or a constant value.
 In the case of ``is_integral`` we're interested in the ``bool`` value it returns, which 
 by the standard library's convention is accessed in the static class variable ``value``:
@@ -263,11 +243,6 @@ Just like a metafunction's value can be accessed with ``::value``, by convention
 we access it through ``::type`` as in ``std::result_of<Function(Args...)>::type``.
 Finally we have to let the compiler know that an expression is a type and not a value, which you do with the keyword
 ``typename`` -- it's an unrelated double use of the keyword that appears in template parameter lists [#]_.
-
-.. [#] If ``Function`` is not actually a function then gcc will raise an error with C++11 and do some magic with
-    SFINAE starting in C++14... we'll talk more about SFINAE later.
-    
-.. [#] Like ``template <typename Unrelated>``.
 
 Whenever you use a template inside of another template, you generally have to help the compiler deduce that the
 template is in fact a *type* by prefixing it with ``typename``. So basically if you don't call it with ``::value``
@@ -367,8 +342,6 @@ When its first parameter is ``false``, it simply results in a compiler error!
 You can use it as the return type of a function along with the metafunctions in ``type_traits`` to create
 overloaded templates that have constraints on their template parameters:
 
-.. [#] Although it wouldn't hurt.
-
 .. code:: c++
 
     template <typename Arg>
@@ -433,9 +406,6 @@ overload resolution because of SFINAE. We can define as many overloaded version 
     }
 
 This one will only be available to overload resolution if ``OnSuccess`` called with ``void`` returns ``true``.
-    
-.. [#] The two-parameter version returns its second parameter as its ``::type``, e.g. 
-    ``std::enable_if<true, int>::type`` is ``int``.
     
 Huzzah! Let's use it:
 
@@ -528,3 +498,33 @@ whitewater raft guide, nature appreciater, enthusiastic exister, and enjoyer of 
 
 Resumes available upon request, and if you're reading this and you're my current employer consider giving me a
 raise. ;)
+
+.. [#] In a manner of speaking.
+
+.. [#] Actually not.
+
+.. [#] But this part is true.
+
+.. [#] Kinda like regular variadic functions.
+
+.. [#] Actually a template parameter can also be an integral type, e.g. ``template <int N>``, another template,
+    and some other stuff too. Czech it out!
+
+.. [#] The standard library provides metafunctions in the ``type_traits`` header, and support only gets better in
+    C++14, C++17, and undoubtedly future versions as well.
+
+.. [#] Like ``int`` or ``const int``.
+
+.. [#] By generating code. It also turns out you can make a trade-off by turning some runtime computations into
+    compile-time computations, although since C++11 it's much easier to do this with `constexpr` than with
+    template metaprogramming.
+
+.. [#] If ``Function`` is not actually a function then gcc will raise an error with C++11 and do some magic with
+    SFINAE starting in C++14... we'll talk more about SFINAE later.
+    
+.. [#] Like ``template <typename Unrelated>``.
+
+.. [#] Although it wouldn't hurt.
+    
+.. [#] The two-parameter version returns its second parameter as its ``::type``, e.g. 
+    ``std::enable_if<true, int>::type`` is ``int``.
