@@ -29,6 +29,6 @@ int main() {
     apiExec(dmitri, doNothing, [](int err){
         printf("Calling all cool lambdas!\n");
     }, &foo);
-    
+
     return 0;
 }

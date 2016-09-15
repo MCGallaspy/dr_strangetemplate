@@ -85,18 +85,17 @@ search-and-replace, and testing each change over and over again. Dear beleaguere
     logIt, /* on error */
     foo, 4, 2); /* params */
 
-    apiAsyncExec(jack,
+    apiExec(jack,
     totalCommitmentToMyFoo,  /* on success - foo is passed automatically to this function */
     logIt, /* on error */
     foo); /* params */
 
 Everything just described can be achieved with templates!
 Easy refactoring, easily changeable success/error behavior, and the ability to select totally different behavior
-by using a different template.
+by using a different template (perhaps something like ``apiAsyncExec``).
 This leads to our first take on templates: **templates are functions that create more functions**.
-By writing one template function we create a new ``apiExec`` for potentially every api function that we have.
-So how do we write something like this?
-We'll start by implementing a basic ``apiExec`` template and gradually add more bells and whistles to it.
+By writing one template function we create a new ``apiExec`` for every api function that we have.
+We'll start by implementing a basic ``apiExec`` template function and gradually add more bells and whistles to it.
 
 .. code:: c++
 
@@ -130,7 +129,7 @@ We'll start by implementing a basic ``apiExec`` template and gradually add more 
     Much success.
     */
 
-That's it! Note two things here:
+That's it! Now you're generating code like a pro. Note two things here:
 
 #. ``apiExec`` is a variadic template.
 #. The first parameter of ``apiExec`` is some weird function type.
@@ -165,7 +164,7 @@ all if you don't have to*:
         }   
     }
     
-Whoa. Your compiler can deduce the type of ``func`` automatically when you pass it in.
+Whoa. Your compiler can deduce the type of ``func`` automatically when you use it as a parameter.
 Let it! It's what compilers love to do.
 
 Abandon all hope, ye who enter here! a.k.a. an intermission
@@ -173,12 +172,17 @@ Abandon all hope, ye who enter here! a.k.a. an intermission
 
 Stop!
 
-Variadic templates are a feature introduced in C++11 and they're really powerful.
-But they also introduce complexity.
-So do the rest of the features considered below.
+Variadic templates are a feature introduced in C++11 and they're really powerful, but they also introduce complexity.
+So do the rest of the features considered below, because as it turns out C++ templates define a whole 'nother
+programming language, one that's executed entirely at compile time and deals with types.
+
 You can get a lot of mileage out of basic templates like above.
-So stop here in your brave march towards template modernity, unless you want to learn about **metaprogramming**
-and write *even less code*.
+But if you understand metaprogramming techniques you can make good use of the standard library [#]_, libraries like
+`boost::hana <http://www.boost.org/doc/libs/1_61_0/libs/hana/doc/html/index.html>`_,
+and even write your own metafunctions for great profit.
+
+.. [#] The standard library provides metafunctions in the ``type_traits`` header, and support only gets better in
+    C++14, C++17, and undoubtedly future versions as well.
 
 Back to your regular program(ming)
 **********************************
@@ -231,10 +235,9 @@ for you [#]_!
     compile-time computations, although since C++11 it's much easier to do this with `constexpr` than with
     template metaprogramming.
 
-Metafunctions take template parameters and the result is a type.
-Sometimes you are interested in the type itself, but in the case of ``is_integral`` we're actually interested in the
-``bool`` value it returns.
-By convention metafunction return values can be accessed by the static class variable ``value``:
+Metafunctions take template parameters and the result is either another type or a constant value.
+In the case of ``is_integral`` we're interested in the ``bool`` value it returns, which 
+by the standard library's convention is accessed in the static class variable ``value``:
 
 .. code:: c++
 
@@ -242,6 +245,10 @@ By convention metafunction return values can be accessed by the static class var
     std::is_integral<double>::value; // false
     std::is_integral<int>; // this is actually a class, and not a valid statement.
  
+    // This works though.
+    typedef typename std::is_integral<double> is_integral_t;
+    is_integral_t::value; // false
+
 Now consider the previous line:
 
 .. code:: c++
@@ -250,10 +257,10 @@ Now consider the previous line:
 
 ``typedef`` is the equivalent of assigning a variable in metaprogramming, and ``ReturnType`` is the type name we're 
 assigning it to.
-``std::result_of`` is a metafunction that returns the type of whatever ``Function`` would be if applied to 
+``std::result_of`` is a metafunction that returns the type of the result of ``Function`` if it was applied to 
 ``Args...`` [#]_.
 Just like a metafunction's value can be accessed with ``::value``, by convention if it's the type we're interested in
-we access it through ``::type``: ``std::result_of<Function(Args...)>::type``.
+we access it through ``::type`` as in ``std::result_of<Function(Args...)>::type``.
 Finally we have to let the compiler know that an expression is a type and not a value, which you do with the keyword
 ``typename`` -- it's an unrelated double use of the keyword that appears in template parameter lists [#]_.
 
