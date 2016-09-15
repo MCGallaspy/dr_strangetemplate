@@ -506,4 +506,25 @@ Case closed
 ***********
 
 Example code for this case study is provided in ``case_study_1.hpp`` and ``case_study_1.cpp``.
-Any typos, inaccuracies, are my fault -- I would appreciate a PR!
+Any typos or inaccuracies are my fault -- I would appreciate a PR!
+
+A guide on metaprogramming would be remiss without mentioning
+`C++ concepts <https://en.wikipedia.org/wiki/Concepts_(C%2B%2B)>`_,
+which have been proposed to greatly simplify selecting template overloads instead of using SFINAE.
+Concepts are currently availabe in `GCC <https://gcc.gnu.org/gcc-6/changes.html>`_.
+
+You can use the fundamental techniques presented to start writing great metaprograms, but if you get deep into it
+you'll probably want to use a library like 
+the older `MPL <http://www.boost.org/doc/libs/1_61_0/libs/mpl/doc/index.html>`_
+or the newer `boost::hana <http://www.boost.org/doc/libs/1_61_0/libs/hana/doc/html/index.html>`_.
+
+More case studies to come!
+
+Who are you?
+************
+
+Michael Gallaspy, variously a professional software engineer, substitute teacher, Peace Corps volunteer,
+whitewater raft guide, nature appreciater, enthusiastic exister, and enjoyer of Dr. Strangelove.
+
+Resumes available upon request, and if you're reading this and you're my current employer consider giving me a
+raise. ;)
