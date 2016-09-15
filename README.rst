@@ -47,9 +47,9 @@ library-specific error. You might consume this API, observing proper error handl
     int err = mandrake(foo, 4, 2);
     if (err != 0) {
         log("mandrake returned error code %d!", err);
-        enterUndergroundShelter();
+        enter_underground_shelter();
     } else {
-        totalCommitmentToMyFoo(foo);
+        total_commitment_to_my_foo(foo);
     }
 
     // ... in some other file
@@ -59,10 +59,10 @@ library-specific error. You might consume this API, observing proper error handl
         suchGreatFoo(foo);
     } else if (err == 1) {
         log("dmitri returned ERR_IMPURE_FLUIDS!");
-        awaitTheInevitable();
+        await_the_inevitable();
     } else {
         log("dmitri returned %d, what could it mean?", err);
-        ponderTheMystery();
+        ponder_the_mystery();
     }
 
 And so on, and so on. You'll write tons of code like this. Sometimes you won't be able to do anything meaningful with
@@ -78,31 +78,31 @@ search-and-replace, and testing each change over and over again. Dear beleaguere
 
 .. code:: c++
 
-    apiExec(mandrake,
+    api_exec(mandrake,
     [&foo](){ /* on success */ 
-        totalCommitmentToMyFoo(foo);
+        total_commitment_to_my_foo(foo);
     },
-    logIt, /* on error */
+    log_it, /* on error */
     foo, 4, 2); /* params */
 
-    apiExec(jack,
-    totalCommitmentToMyFoo,  /* on success - foo is passed automatically to this function */
-    logIt, /* on error */
+    api_exec(jack,
+    total_commitment_to_my_foo,  /* on success - foo is passed automatically to this function */
+    log_it, /* on error */
     foo); /* params */
 
 Everything just described can be achieved with templates!
 Easy refactoring, easily changeable success/error behavior, and the ability to select totally different behavior
-by using a different template (perhaps something like ``apiAsyncExec``).
+by using a different template (perhaps something like ``api_async_exec``).
 This leads to our first take on templates: **templates are functions that create more functions**.
-By writing one template function we create a new ``apiExec`` for every api function that we have.
-We'll start by implementing a basic ``apiExec`` template function and gradually add more bells and whistles to it.
+By writing one template function we create a new ``api_exec`` for every api function that we have.
+We'll start by implementing a basic ``api_exec`` template function and gradually add more bells and whistles to it.
 
 .. code:: c++
 
     // case_study_1.hpp
     
     template<typename... Args>
-    void apiExec(int func(Args...), Args... args) {
+    void api_exec(int func(Args...), Args... args) {
         int err = func(args...);
         if (err == 0) {
             printf("Much success.\n");
@@ -117,10 +117,10 @@ We'll start by implementing a basic ``apiExec`` template function and gradually 
     // case_study_1.cpp
     
     MyCoolStruct foo;
-    apiExec(mandrake, &foo, 1, 2);
-    apiExec(jack, &foo, 3, 4);
-    apiExec(dmitri, &foo);
-    apiExec(major, &foo, 5, 6, 7);
+    api_exec(mandrake, &foo, 1, 2);
+    api_exec(jack, &foo, 3, 4);
+    api_exec(dmitri, &foo);
+    api_exec(major, &foo, 5, 6, 7);
     
     /* Output:
     Much success.
@@ -131,8 +131,8 @@ We'll start by implementing a basic ``apiExec`` template function and gradually 
 
 That's it! Now you're generating code like a pro. Note two things here:
 
-#. ``apiExec`` is a variadic template.
-#. The first parameter of ``apiExec`` is some weird function type.
+#. ``api_exec`` is a variadic template.
+#. The first parameter of ``api_exec`` is some weird function type.
 
 A **variadic template** is a template that takes a variable number of template parameters [#]_. If you've used templates
 before you may know that a *template parameter* is a type [#]_ like ``int`` or ``MyCoolStruct``.
@@ -152,7 +152,7 @@ all if you don't have to*:
 .. code:: c++
 
     template<typename Function, typename... Args>
-    void apiExec(Function func, Args... args) {
+    void api_exec(Function func, Args... args) {
         int err = func(args...);
         if (err == 0) {
             printf("Much success.\n");
@@ -196,7 +196,7 @@ another, the compiler will quietly do stuff like this:
         return 5.0;
     }
 
-    apiExec(epsilon); // no error here!
+    api_exec(epsilon); // no error here!
 
 This isn't always undesirable behavior -- but since our C API *always* returns ``int`` anyway we may as well nip some
 weird mistake in the bud by creating a compiler error when you try to do silly stuff like above:
@@ -204,7 +204,7 @@ weird mistake in the bud by creating a compiler error when you try to do silly s
 .. code:: c++
 
     template<typename Function, typename... Args>
-    void apiExec(Function func, Args... args) {
+    void api_exec(Function func, Args... args) {
         // Guards against careless instantiations with functions that return double.
         typedef typename std::result_of<Function(Args...)>::type ReturnType;
         static_assert(std::is_integral<ReturnType>::value, "Please only call me with integral types!");
@@ -285,7 +285,7 @@ Finally let's write something that takes success and error callbacks:
     typename OnSuccess,
     typename OnError,
     typename... Args>
-    void apiExec(Function func, OnSuccess on_success, OnError on_error, Args... args) {
+    void api_exec(Function func, OnSuccess on_success, OnError on_error, Args... args) {
         typedef typename std::result_of<Function(Args...)>::type ReturnType;
         static_assert(std::is_integral<ReturnType>::value, "Please only call me with integral types!");
         
@@ -296,3 +296,214 @@ Finally let's write something that takes success and error callbacks:
             on_error(err);
         }
     }
+    
+    // example use
+    api_exec(mandrake, do_nothing, print_error, &foo, 8, 9);
+
+Simple! We just add two more template parameters representing our success and error functions. But a perceptive
+reader might wonder what happens if you try to call this with an on_error function that doesn't take a single ``int``
+parameter. Turns out it's a compile error.
+
+Wait, weren't we promised an on_success callback that would automatically take the ``foo`` parameter we passed in?
+Let's write an overloaded function to handle that!
+
+.. code:: c++
+    
+    // WRONG CODE, THIS DOESN'T WORK!
+    
+    template<
+    typename Function,
+    typename OnSuccess,
+    typename OnError,
+    typename InputType,
+    typename... Args>
+    void api_exec(Function func, OnSuccess on_success, OnError on_error, InputType input, Args... args) {
+        typedef typename std::result_of<Function(InputType, Args...)>::type ReturnType;
+        static_assert(std::is_integral<ReturnType>::value, "Please only call me with integral types!");
+        
+        int err = func(input, args...);
+        if (err == 0) {
+            on_success(input);
+        } else {
+            on_error(err);
+        }
+    }
+
+    template<
+    typename Function,
+    typename OnSuccess,
+    typename OnError,
+    typename... Args>
+    void api_exec(Function func, OnSuccess on_success, OnError on_error, Args... args) {
+        typedef typename std::result_of<Function(Args...)>::type ReturnType;
+        static_assert(std::is_integral<ReturnType>::value, "Please only call me with integral types!");
+        
+        int err = func(args...);
+        if (err == 0) {
+            on_success();
+        } else {
+            on_error(err);
+        }
+    }
+
+Ahh! This doesn't work. If you try to use it, then you'll get errors because the compiler has no way of knowing
+which overloaded function to pick. It can't figure it out from the template parameters, because variadic parameters
+"eat" up all the rest. In other words a parameter list like ``template <typename One, typename... TheRest>``
+seems exactly the same as ``template <typename... SameAsTheLastOne>``. If only there was some way to specify the 
+*metatype* of the types in template parameters, just like you declare the
+types of variables in regular functions... And there is! But sadly in C++11 it's a bit clunky as you may infer from
+its weird acronym-name (acroname?) SFINAE.
+
+SFINAE stands for "substitution failure is not an error" and refers to
+the rules of how C++ selects overloaded templates. Basically, in some circumstances if substituting a type would
+result in an error otherwise, the compiler will quietly ignore the error and try to select another template for
+overload resolution instead. SFINAE does *not* apply in function bodies -- we already saw this if you try to pass
+in an on error function that doesn't take a single ``int`` parameter. However it does apply to the *return type* of a
+template function.
+
+You don't need to understand the details of SFINAE to start using it [#]_. The standard library provides a metafunction
+called ``std::enable_if`` which takes one ``bool`` template parameter and one optional template parameter.
+When its first parameter is ``false``, it simply results in a compiler error!
+You can use it as the return type of a function along with the metafunctions in ``type_traits`` to create
+overloaded templates that have constraints on their template parameters:
+
+.. [#] Although it wouldn't hurt.
+
+.. code:: c++
+
+    template <typename Arg>
+    using returns_void = typename std::is_same<typename std::result_of<Arg>::type, void>;
+
+    template<
+    typename Function,
+    typename OnSuccess,
+    typename OnError,
+    typename InputType,
+    typename... Args>
+    typename std::enable_if<
+        returns_void<OnSuccess(InputType)>::value
+    >::type
+    api_exec(Function func, OnSuccess on_success, OnError on_error, InputType input, Args... args) {
+        typedef typename std::result_of<Function(InputType, Args...)>::type ReturnType;
+        static_assert(std::is_integral<ReturnType>::value, "Please only call me with integral types!");
+        
+        int err = func(input, args...);
+        if (err == 0) {
+            on_success(input);
+        } else {
+            on_error(err);
+        }
+    }
+
+Let's break it down. First we define a new metafunction ``returns_void`` from the ``type_traits`` metafunctions for
+readability. It takes a single template parameter, and has a ``value`` member that's true if ``result_of`` applied to
+its argument is ``void``. Next we replace the return type with ``std::enable_if``:
+
+.. code:: c++
+
+    typename std::enable_if<
+        returns_void<OnSuccess(InputType)>::value
+    >::type
+    api_exec(Function func, OnSuccess on_success, OnError on_error, InputType input, Args... args) {
+
+The ``::type`` of ``enable_if`` is ``void`` with the single-parameter version [#]_, so the signature of ``api_exec``
+hasn't changed. However if the predicate ``returns_void`` is ``false`` then this function will be removed from
+overload resolution because of SFINAE. We can define as many overloaded version as we want now!
+
+.. code:: c++
+
+    template<
+    typename Function,
+    typename OnSuccess,
+    typename OnError,
+    typename... Args>
+    typename std::enable_if<
+        returns_void<OnSuccess(void)>::value
+    >::type
+    api_exec(Function func, OnSuccess on_success, OnError on_error, Args... args) {
+        typedef typename std::result_of<Function(Args...)>::type ReturnType;
+        static_assert(std::is_integral<ReturnType>::value, "Please only call me with integral types!");
+        
+        int err = func(args...);
+        if (err == 0) {
+            on_success();
+        } else {
+            on_error(err);
+        }
+    }
+
+This one will only be available to overload resolution if ``OnSuccess`` called with ``void`` returns ``true``.
+    
+.. [#] The two-parameter version returns its second parameter as its ``::type``, e.g. 
+    ``std::enable_if<true, int>::type`` is ``int``.
+    
+Huzzah! Let's use it:
+
+.. code:: c++
+
+    // case_study_1.cpp
+    
+    #include "case_study_1.hpp"
+
+    double epsilon() {
+        return 5.0;
+    }
+
+    void do_nothing() {}
+
+    void use_my_cool_struct(MyCoolStruct *foo) {
+        printf("MyCoolStruct a: %d, b: %d, f: %f.2\n", foo->a, foo->b, foo->f);
+    }
+
+    int main() {
+        
+        MyCoolStruct foo;
+        api_exec(mandrake, &foo, 1, 2);
+        api_exec(jack, &foo, 3, 4);
+        api_exec(dmitri, &foo);
+        api_exec(major, &foo, 5, 6, 7);
+        
+        // This is a compiler error:
+        // api_exec(epsilon); 
+
+        api_exec(mandrake, do_nothing, print_error, &foo, 8, 9);
+        api_exec(mandrake, use_my_cool_struct, print_error, &foo, 10, 11);
+        
+        api_exec(
+        dmitri,
+        [](const MyCoolStruct* foo){
+            printf("Success!\n");
+        },
+        [](int err){
+            printf("Calling all cool lambdas!\n");
+        },
+        &foo);
+        
+        api_exec(
+        major,
+        [](){
+            printf("Yee-haw!\n");
+        },
+        [](int err){
+            printf("Another cool lambda!\n");
+        },
+        &foo, 8, 9, 10);
+
+        return 0;
+    }
+    
+    /* output
+    Much success.
+    Got error: My life essence!!
+    Got error: Mysterious unknown error!!
+    Much success.
+    MyCoolStruct a: 100, b: 110, f: 42.000000.2
+    Calling all cool lambdas!
+    Yee-haw!
+    */
+    
+Case closed
+***********
+
+Example code for this case study is provided in ``case_study_1.hpp`` and ``case_study_1.cpp``.
+Any typos, inaccuracies, are my fault -- I would appreciate a PR!

@@ -49,6 +49,9 @@ void print_error(int err) {
     );
 }
 
+template <typename Arg>
+using returns_void = typename std::is_same<typename std::result_of<Arg>::type, void>;
+
 template<
 typename Function,
 typename OnSuccess,
@@ -56,9 +59,9 @@ typename OnError,
 typename InputType,
 typename... Args>
 typename std::enable_if<
-    std::is_same<typename std::result_of<OnSuccess(InputType)>::type, void>::value
+    returns_void<OnSuccess(InputType)>::value
 >::type
-apiExec(Function func, OnSuccess on_success, OnError on_error, InputType input, Args... args) {
+api_exec(Function func, OnSuccess on_success, OnError on_error, InputType input, Args... args) {
     typedef typename std::result_of<Function(InputType, Args...)>::type ReturnType;
     static_assert(std::is_integral<ReturnType>::value, "Please only call me with integral types!");
     
@@ -76,9 +79,9 @@ typename OnSuccess,
 typename OnError,
 typename... Args>
 typename std::enable_if<
-    std::is_same<typename std::result_of<OnSuccess(void)>::type, void>::value
+    returns_void<OnSuccess(void)>::value
 >::type
-apiExec(Function func, OnSuccess on_success, OnError on_error, Args... args) {
+api_exec(Function func, OnSuccess on_success, OnError on_error, Args... args) {
     typedef typename std::result_of<Function(Args...)>::type ReturnType;
     static_assert(std::is_integral<ReturnType>::value, "Please only call me with integral types!");
     
@@ -93,7 +96,7 @@ apiExec(Function func, OnSuccess on_success, OnError on_error, Args... args) {
 template<
 typename Function,
 typename... Args>
-void apiExec(Function func, Args... args) {
+void api_exec(Function func, Args... args) {
     typedef typename std::result_of<Function(Args...)>::type ReturnType;
     static_assert(std::is_integral<ReturnType>::value, "Please only call me with integral types!");
     
