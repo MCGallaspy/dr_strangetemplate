@@ -6,7 +6,7 @@
 
 /* The hypothetical C API */
 
-# define ERR_THEY_REALLY_DID_IT 6
+# define ERR_IMPURE_FLUIDS 6
 # define ERR_UNKNOWN 13
 
 struct MyCoolStruct {
@@ -15,22 +15,22 @@ struct MyCoolStruct {
 };
 
 
-int alpha(MyCoolStruct *input, int param1, int param2) {
+int mandrake(MyCoolStruct *input, int param1, int param2) {
     input->a = param1*param1;
     input->b = param1*param2;
     return 0;
 }
 
-int beta(MyCoolStruct *input, int param1, int param2) {
-    return ERR_THEY_REALLY_DID_IT;
+int jack(MyCoolStruct *input, int param1, int param2) {
+    return ERR_IMPURE_FLUIDS;
 }
 
-int gamma(MyCoolStruct *input) {
+int dmitri(MyCoolStruct *input) {
     input->f = 7.0*6.0;
     return ERR_UNKNOWN;
 }
 
-int delta(MyCoolStruct *input, int param1, int param2, int param3) {
+int major(MyCoolStruct *input, int param1, int param2, int param3) {
     input->b = param1 + param2 + param3;
     return 0;
 }
@@ -44,7 +44,7 @@ void print_success() {
 
 void print_error(int err) {
     printf("Got error: %s!\n",
-        err == ERR_THEY_REALLY_DID_IT ? "They really did it!" :
+        err == ERR_IMPURE_FLUIDS ? "My life essence!" :
         err == ERR_UNKNOWN ? "Mysterious unknown error!" : ""
     );
 }

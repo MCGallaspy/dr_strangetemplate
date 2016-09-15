@@ -12,7 +12,7 @@ metaprogramming have their use in library code (as with the venerable ``std::vec
 surely are a code smell anywhere else.
 
 But no more! We live in a more enlightened age, and it's time to recognize the noble and simple truth of C++
-templates: **they help you write less code**. Moreover with modern C++ features, template code is as readable,
+templates: **they help you write less code**. Moreover with modern C++ features, template code is readable,
 maintainable, sustainable [#]_, biodegradable [#]_, and fully embraceable [#]_!
 A well-rounded C++ programmer should be able to identify when to use this powerful language feature.
 
@@ -34,42 +34,41 @@ Imagine that I have a library with several functions as such:
 
 .. code:: c++
 
-    int alpha(MyCoolStruct *input, int param1, int param2);
-    int beta(MyCoolStruct *input, int param1, int param2);
-    int gamma(MyCoolStruct *input);
-    int delta(MyCoolStruct *input, int param1, int param2, int param3);
+    int mandrake(MyCoolStruct *input, int param1, int param2);
+    int jack(MyCoolStruct *input, int param1, int param2);
+    int dmitri(MyCoolStruct *input);
+    int major(MyCoolStruct *input, int param1, int param2, int param3);
 
 Each function returns an ``int`` error code -- ``0`` represents no error, and other integers indicate some
-library-specific error which you can compare to a slew of macros from a header file. You might consume this API,
-observing proper error handling and logging as follows:
+library-specific error. You might consume this API, observing proper error handling and logging as follows:
 
 .. code:: c++
 
-    int err = alpha(foo, 4, 2);
+    int err = mandrake(foo, 4, 2);
     if (err != 0) {
-        log("alpha returned error code %d!", err);
-        panicAndCry();
+        log("mandrake returned error code %d!", err);
+        enterUndergroundShelter();
     } else {
-        actCasualWithMyFoo(foo);
+        totalCommitmentToMyFoo(foo);
     }
 
     // ... in some other file
 
-    int err = gamma(foo);
+    int err = dmitri(foo);
     if (err == 0) {
         suchGreatFoo(foo);
     } else if (err == 1) {
-        log("gamma returned ERR_THEY_REALLY_DID_IT!");
+        log("dmitri returned ERR_IMPURE_FLUIDS!");
         awaitTheInevitable();
     } else {
-        log("gamma returned %d, what could it mean?", err);
+        log("dmitri returned %d, what could it mean?", err);
         ponderTheMystery();
     }
 
 And so on, and so on. You'll write tons of code like this. Sometimes you won't be able to do anything meaningful with
 an error, so you just log it and move on. Maybe in some cases you'll want to change the behavior on success -- for
-instance if a call to ``delta`` succeeds then you want to handle it in another thread.
-And then a few weeks later your supervisor decides you should do this with ``gamma`` as well.
+instance if a call to ``major`` succeeds then you want to handle it in another thread.
+And then a few weeks later your supervisor decides you should do this with ``dmitri`` as well.
 And then that all API calls should be handled asynchronously on success, but reconsiders a few weeks
 after you've added hundreds of calls and decides that only API calls starting with the letter ``b`` should be
 handled synchronously.
@@ -79,15 +78,15 @@ search-and-replace, and testing each change over and over again. Dear beleaguere
 
 .. code:: c++
 
-    apiExec(alpha,
+    apiExec(mandrake,
     [&foo](){ /* on success */ 
-        actCasualWithMy(foo);
+        totalCommitmentToMyFoo(foo);
     },
     logIt, /* on error */
     foo, 4, 2); /* params */
 
-    apiAsyncExec(beta,
-    actCasualWithMyFoo,  /* on success - foo is passed automatically to this function */
+    apiAsyncExec(jack,
+    totalCommitmentToMyFoo,  /* on success - foo is passed automatically to this function */
     logIt, /* on error */
     foo); /* params */
 
@@ -110,7 +109,7 @@ We'll start by implementing a basic ``apiExec`` template and gradually add more 
             printf("Much success.\n");
         } else {
             printf("Got error: %s!\n",
-                err == ERR_THEY_REALLY_DID_IT ? "They really did it!" :
+                err == ERR_IMPURE_FLUIDS ? "My life essence!" :
                 err == ERR_UNKNOWN ? "Mysterious unknown error!" : ""
             );
         }   
@@ -119,14 +118,14 @@ We'll start by implementing a basic ``apiExec`` template and gradually add more 
     // case_study_1.cpp
     
     MyCoolStruct foo;
-    apiExec(alpha, &foo, 1, 2);
-    apiExec(beta, &foo, 3, 4);
-    apiExec(gamma, &foo);
-    apiExec(delta, &foo, 5, 6, 7);
+    apiExec(mandrake, &foo, 1, 2);
+    apiExec(jack, &foo, 3, 4);
+    apiExec(dmitri, &foo);
+    apiExec(major, &foo, 5, 6, 7);
     
     /* Output:
     Much success.
-    Got error: They really did it!!
+    Got error: My life essence!!
     Got error: Mysterious unknown error!!
     Much success.
     */
@@ -160,7 +159,7 @@ all if you don't have to*:
             printf("Much success.\n");
         } else {
             printf("Got error: %s!\n",
-                err == ERR_THEY_REALLY_DID_IT ? "They really did it!" :
+                err == ERR_IMPURE_FLUIDS ? "My life essence!" :
                 err == ERR_UNKNOWN ? "Mysterious unknown error!" : ""
             );
         }   
@@ -211,7 +210,7 @@ weird mistake in the bud by creating a compiler error when you try to do silly s
             printf("Much success.\n");
         } else {
             printf("Got error: %s!\n",
-                err == ERR_THEY_REALLY_DID_IT ? "They really did it!" :
+                err == ERR_IMPURE_FLUIDS ? "My life essence!" :
                 err == ERR_UNKNOWN ? "Mysterious unknown error!" : ""
             );
         }   

@@ -15,18 +15,18 @@ void useMyCoolStruct(MyCoolStruct *foo) {
 int main() {
     
     MyCoolStruct foo;
-    apiExec(alpha, &foo, 1, 2);
-    apiExec(beta, &foo, 3, 4);
-    apiExec(gamma, &foo);
-    apiExec(delta, &foo, 5, 6, 7);
+    apiExec(mandrake, &foo, 1, 2);
+    apiExec(jack, &foo, 3, 4);
+    apiExec(dmitri, &foo);
+    apiExec(major, &foo, 5, 6, 7);
     
     // This is a compiler error:
     // apiExec(epsilon); 
 
-    apiExec(alpha, doNothing, print_error, &foo, 8, 9);
-    apiExec(alpha, useMyCoolStruct, print_error, &foo, 10, 11);
+    apiExec(mandrake, doNothing, print_error, &foo, 8, 9);
+    apiExec(mandrake, useMyCoolStruct, print_error, &foo, 10, 11);
     
-    apiExec(gamma, doNothing, [](int err){
+    apiExec(dmitri, doNothing, [](int err){
         printf("Calling all cool lambdas!\n");
     }, &foo);
     
