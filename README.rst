@@ -48,14 +48,14 @@ library-specific error. You might consume this API, observing proper error handl
 
     // ... in some other file
 
-    int err = dmitri(foo);
+    int err = jack(foo, 3, 6);
     if (err == 0) {
-        suchGreatFoo(foo);
+        preemptive_strike(foo);
     } else if (err == 1) {
-        log("dmitri returned ERR_IMPURE_FLUIDS!");
+        log("jack returned ERR_IMPURE_FLUIDS!");
         await_the_inevitable();
     } else {
-        log("dmitri returned %d, what could it mean?", err);
+        log("jack returned %d, what could it mean?", err);
         ponder_the_mystery();
     }
 
@@ -64,7 +64,7 @@ an error, so you just log it and move on. Maybe in some cases you'll want to cha
 instance if a call to ``major`` succeeds then you want to handle it in another thread.
 And then a few weeks later your supervisor decides you should do this with ``dmitri`` as well.
 And then that all API calls should be handled asynchronously on success, but reconsiders a few weeks
-after you've added hundreds of calls and decides that only API calls starting with the letter ``b`` should be
+after you've added hundreds of calls and decides that only API functions starting with the letter ``b`` should be
 handled synchronously.
 
 So you find yourself sweating laboriously over your keyboard, doing tedious and undignified copy-and-paste,
@@ -82,13 +82,12 @@ search-and-replace, and testing each change over and over again. Dear beleaguere
     api_exec(jack,
     total_commitment_to_my_foo,  /* on success - foo is passed automatically to this function */
     log_it, /* on error */
-    foo); /* params */
+    foo, 3, 6); /* params */
 
 Everything just described can be achieved with templates!
 Easy refactoring, easily changeable success/error behavior, and the ability to select totally different behavior
 by using a different template (perhaps something like ``api_async_exec``).
-This leads to our first take on templates: **templates are functions that create more functions**.
-By writing one template function we create a new ``api_exec`` for every api function that we have.
+By writing one template function we create a new ``api_exec`` for every API function that we have.
 We'll start by implementing a basic ``api_exec`` template function and gradually add more bells and whistles to it.
 
 .. code:: c++
@@ -156,19 +155,18 @@ all if you don't have to*:
 Whoa. Your compiler can deduce the type of ``func`` automatically when you use it as a parameter.
 Let it! It's what compilers love to do.
 
-Abandon all hope, ye who enter here! a.k.a. an intermission
-***********************************************************
-
-Stop!
+Abandon all hope, ye who enter here!
+************************************
 
 Variadic templates are a feature introduced in C++11 and they're really powerful, but they also introduce complexity.
 So do the rest of the features considered below, because as it turns out C++ templates define a whole 'nother
-programming language, one that's executed entirely at compile time and deals with types.
+programming language, one that's executed entirely at compile time and deals with types [#]_.
 
 You can get a lot of mileage out of basic templates like above.
 But if you understand metaprogramming techniques you can make good use of the standard library [#]_, libraries like
 `boost::hana <http://www.boost.org/doc/libs/1_61_0/libs/hana/doc/html/index.html>`_,
-and even write your own metafunctions for great profit.
+and write your own metafunctions for great profit. So read on if you wish to continue the brave march into
+template modernity!
 
 Back to your regular program(ming)
 **********************************
@@ -211,9 +209,7 @@ runtime, so you should basically use it like it's going out of style to keep you
 
 More interesting is the expression ``std::is_integral<ReturnType>::value``.
 ``std::is_integral`` is a *metafunction* that returns ``true`` if the type ``ReturnType`` is (you guessed it) 
-intergral [#]_. This is our first example of *metaprogramming*! Turns out C++'s template system is a complete
-programming language in itself. You can write programs evaluated at compile time that write your runtime program
-for you [#]_!
+intergral [#]_. This is our first example of metaprogramming!
 
 Metafunctions take template parameters and the result is either another type or a constant value.
 In the case of ``is_integral`` we're interested in the ``bool`` value it returns, which 
@@ -508,16 +504,16 @@ raise. ;)
 .. [#] Kinda like regular variadic functions.
 
 .. [#] Actually a template parameter can also be an integral type, e.g. ``template <int N>``, another template,
-    and some other stuff too. Czech it out!
+    and some other stuff too. Check it out!
+
+.. [#] It also turns out you can make a trade-off by turning some runtime computations into
+    compile-time computations, although since C++11 it's much easier to do this with `constexpr` than with
+    template metaprogramming.
 
 .. [#] The standard library provides metafunctions in the ``type_traits`` header, and support only gets better in
     C++14, C++17, and undoubtedly future versions as well.
 
 .. [#] Like ``int`` or ``const int``.
-
-.. [#] By generating code. It also turns out you can make a trade-off by turning some runtime computations into
-    compile-time computations, although since C++11 it's much easier to do this with `constexpr` than with
-    template metaprogramming.
 
 .. [#] If ``Function`` is not actually a function then gcc will raise an error with C++11 and do some magic with
     SFINAE starting in C++14... we'll talk more about SFINAE later.
