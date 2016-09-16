@@ -13,13 +13,15 @@ surely are a code smell anywhere else.
 
 But no more! We live in a more enlightened age, and it's time to recognize the noble and simple truth of C++
 templates: **they help you write less code**. Moreover with modern C++ features, template code is readable,
-maintainable, sustainable [#]_, biodegradable [#]_, and fully embraceable [#]_!
+maintainable, sustainable [1]_, biodegradable [2]_, and fully embraceable [3]_!
 A well-rounded C++ programmer should be able to identify when to use this powerful language feature.
 
 What follows is a guide on writing practical, maintainable C++ template code.
 It is divided into case-studies of (more-or-less) real code that I have seen running freely in the wild, waiting to
 be boldly elevated into template modernity.
 So let's begin:
+
+.. contents:: Table of Contents
 
 Case Study 1: Consuming a C API
 -------------------------------
@@ -127,8 +129,8 @@ That's it! Now you're generating code like a pro. Note two things here:
 #. ``api_exec`` is a variadic template.
 #. The first parameter of ``api_exec`` is some weird function type.
 
-A **variadic template** is a template that takes a variable number of template parameters [#]_. If you've used templates
-before you may know that a *template parameter* is a type [#]_ like ``int`` or ``MyCoolStruct``.
+A **variadic template** is a template that takes a variable number of template parameters [4]_. If you've used templates
+before you may know that a *template parameter* is a type [5]_ like ``int`` or ``MyCoolStruct``.
 So a variadic template just takes some variable number of types that you don't have to specify.
 A variadic template's *parameter pack* can be expanded with ``Args...`` and used as a function parameter with 
 ``Args... args``. In this case ``Args...`` corresponds to the *types* of the parameters and ``args``
@@ -160,10 +162,10 @@ Abandon all hope, ye who enter here!
 
 Variadic templates are a feature introduced in C++11 and they're really powerful, but they also introduce complexity.
 So do the rest of the features considered below, because as it turns out C++ templates define a whole 'nother
-programming language, one that's executed entirely at compile time and deals with types [#]_.
+programming language, one that's executed entirely at compile time and deals with types [6]_.
 
 You can get a lot of mileage out of basic templates like above.
-But if you understand metaprogramming techniques you can make good use of the standard library [#]_, libraries like
+But if you understand metaprogramming techniques you can make good use of the standard library [7]_, libraries like
 `boost::hana <http://www.boost.org/doc/libs/1_61_0/libs/hana/doc/html/index.html>`_,
 and write your own metafunctions for great profit. So read on if you wish to continue the brave march into
 template modernity!
@@ -209,7 +211,7 @@ runtime, so you should basically use it like it's going out of style to keep you
 
 More interesting is the expression ``std::is_integral<ReturnType>::value``.
 ``std::is_integral`` is a *metafunction* that returns ``true`` if the type ``ReturnType`` is (you guessed it) 
-integral [#]_. This is our first example of metaprogramming!
+integral [8]_. This is our first example of metaprogramming!
 
 Metafunctions take template parameters and the result is either another type or a constant value.
 In the case of ``is_integral`` we're interested in the ``bool`` value it returns, which 
@@ -234,11 +236,11 @@ Now consider the previous line:
 ``typedef`` is the equivalent of assigning a variable in metaprogramming, and ``ReturnType`` is the type name we're 
 assigning it to.
 ``std::result_of`` is a metafunction that returns the type of the result of ``Function`` if it was applied to 
-``Args...`` [#]_.
+``Args...`` [9]_.
 Just like a metafunction's value can be accessed with ``::value``, by convention if it's the type we're interested in
 we access it through ``::type`` as in ``std::result_of<Function(Args...)>::type``.
 Finally we have to let the compiler know that an expression is a type and not a value, which you do with the keyword
-``typename`` -- it's an unrelated double use of the keyword that appears in template parameter lists [#]_.
+``typename`` -- it's an unrelated double use of the keyword that appears in template parameter lists [10]_.
 
 Whenever you use a template inside of another template, you generally have to help the compiler deduce that the
 template is in fact a *type* by prefixing it with ``typename``. So basically if you don't call it with ``::value``
@@ -332,7 +334,7 @@ overload resolution instead. SFINAE does *not* apply in function bodies -- we al
 in an on error function that doesn't take a single ``int`` parameter. However it does apply to the *return type* of a
 template function.
 
-You don't need to understand the details of SFINAE to start using it [#]_. The standard library provides a metafunction
+You don't need to understand the details of SFINAE to start using it [11]_. The standard library provides a metafunction
 called ``std::enable_if`` which takes one ``bool`` template parameter and one optional template parameter.
 When its first parameter is ``false``, it simply results in a compiler error!
 You can use it as the return type of a function along with the metafunctions in ``type_traits`` to create
@@ -375,7 +377,7 @@ its argument is ``void``. Next we replace the return type with ``std::enable_if`
     >::type
     api_exec(Function func, OnSuccess on_success, OnError on_error, InputType input, Args... args) {
 
-The ``::type`` of ``enable_if`` is ``void`` with the single-parameter version [#]_, so the signature of ``api_exec``
+The ``::type`` of ``enable_if`` is ``void`` with the single-parameter version [12]_, so the signature of ``api_exec``
 hasn't changed. However if the predicate ``returns_void`` is ``false`` then this function will be removed from
 overload resolution because of SFINAE. We can define as many overloaded version as we want now!
 
@@ -486,6 +488,47 @@ or the newer `boost::hana <http://www.boost.org/doc/libs/1_61_0/libs/hana/doc/ht
 
 More case studies to come!
 
+Case Study 2: Building an awesome event interface
+-------------------------------------------------
+
+Templates can be used to create really great interfaces!
+They allow you to manipulate types in ways that wouldn't otherwise be possible.
+Consider the following pattern that I'll call *Do Something When X Happens*.
+It's a very simple pattern: whenever some particular event occurs, then one or more listeners respond to that event!
+An event occurring is realized as instantiating a class and providing it to a dispatcher.
+Listeners are recognized by providing them to the dispatcher *and* defining an appropriate handler member function.
+We'll start with an interface that we [13]_ want and work backwards to build it:
+
+.. code:: c++
+   
+    class JustBeforeReturnEvent {
+        // ...
+    }
+    
+    class CoutShouter {
+    public:
+        void handle(const JustBeforeReturnEvent& evt) {
+            std::cout << "Goodbye!\n";
+        }
+    }
+    
+    class Dispatcher {
+    public:
+        template <typename T>
+        static void post(const T&);
+    }
+    
+    int main() {
+ 
+        Dispatcher::post(JustBeforeReturnEvent{});
+        return 0;
+    }
+
+This is the most basic example of the *Do Something When X Happens* pattern -- just before the function returns,
+we want to call CoutShouter. The value of the pattern is in easily changing exactly what happens on some event.
+First, the dispatcher must be made aware of classes that could potentially handle events. Then when an event occurs,
+we'll check each class to see if it can handle the event:
+
 Who are you?
 ************
 
@@ -495,31 +538,33 @@ whitewater raft guide, nature appreciater, enthusiastic exister, and enjoyer of 
 Resumes available upon request, and if you're reading this and you're my current employer consider giving me a
 raise. ;)
 
-.. [#] In a manner of speaking.
+.. [1] In a manner of speaking.
 
-.. [#] Actually not.
+.. [2] Actually not.
 
-.. [#] But this part is true.
+.. [3] But this part is true.
 
-.. [#] Kinda like regular variadic functions.
+.. [4] Kinda like regular variadic functions.
 
-.. [#] Actually a template parameter can also be an integral type, e.g. ``template <int N>``, another template,
+.. [5] Actually a template parameter can also be an integral type, e.g. ``template <int N>``, another template,
     and some other stuff too. Check it out!
 
-.. [#] It also turns out you can make a trade-off by turning some runtime computations into
+.. [6] It also turns out you can make a trade-off by turning some runtime computations into
     compile-time computations, although since C++11 it's much easier to do this with `constexpr` than with
     template metaprogramming.
 
-.. [#] The standard library provides metafunctions in the ``type_traits`` header, and support only gets better in
+.. [7] The standard library provides metafunctions in the ``type_traits`` header, and support only gets better in
     C++14, C++17, and undoubtedly future versions as well.
 
-.. [#] Like ``int`` or ``const int``.
+.. [8] Like ``int`` or ``const int``.
 
-.. [#] If ``Function`` is not actually a function then gcc will raise an error with C++11.
+.. [9] If ``Function`` is not actually a function then gcc will raise an error with C++11.
     
-.. [#] Like ``template <typename Unrelated>``.
+.. [10] Like ``template <typename Unrelated>``.
 
-.. [#] Although it wouldn't hurt.
+.. [11] Although it wouldn't hurt.
     
-.. [#] The two-parameter version returns its second parameter as its ``::type``, e.g. 
+.. [12] The two-parameter version returns its second parameter as its ``::type``, e.g. 
     ``std::enable_if<true, int>::type`` is ``int``.
+
+.. [13] And by "we" of course I mean "I".
