@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 
 #include "case_study_2.hpp"
@@ -6,38 +7,69 @@
 
 using std::cout;
 using std::endl;
+using std::string;
 
-
-class JustBeforeReturnEvent {
+/* Events */
+class JustBeforeReturn {
     // ...
 };
 
+class InTheBeginning {};
+
+struct ReadingComicBooks {
+    string title;
+};
+
+/* Handlers */
 class CoutShouter {
 public:
-    static void handle(const JustBeforeReturnEvent& evt) {
-        cout << "Goodbye!\n";
+    static void handle(const JustBeforeReturn& evt) {
+        cout << "Goodbye!" << endl;
+    }
+    
+    static void handle(const InTheBeginning& evt) {
+        cout << "Hello!" << endl;
+    }
+    
+    static void handle(const ReadingComicBooks& evt) {
+        cout << "Comics!" << endl;
     }
 };
 
 class QuietGuy {};
 
-int main() {    
-    using listeners = type_list<CoutShouter, QuietGuy>;
-    using listeners_2 = type_list<CoutShouter, CoutShouter>;
-    using listeners_3 = type_list<QuietGuy, QuietGuy, QuietGuy, QuietGuy>;
+class ComicBookNerd {
+public:
+    static void handle(const ReadingComicBooks& evt) {
+        cout << "I love " + evt.title + "!" << endl;
+    }
+};
 
-    cout << has_tail<listeners_2>() << endl;
+
+int main() {    
+    using listeners_1 = type_list<QuietGuy>;
+    string repr_1 = "type_list<QuietGuy>";
+    using listeners_2 = type_list<CoutShouter, QuietGuy, ComicBookNerd>;
+    string repr_2 = "type_list<CoutShouter, QuietGuy, ComicBookNerd>";
     
-    cout << count<listeners>() << endl;
-    cout << count<listeners_2>() << endl;
+    Dispatcher<listeners_1>::post(InTheBeginning{});
+    Dispatcher<listeners_2>::post(InTheBeginning{});
+    cout << endl;
     
-    cout << "listeners 1: ";
-    Dispatcher<listeners>::post(JustBeforeReturnEvent{});
+    cout << repr_1 + " has tail: " + (has_tail<listeners_1>() ? "true" : "false") << endl;
+    cout << repr_2 + " has tail: " + (has_tail<listeners_2>() ? "true" : "false") << endl;
+    cout << endl;
+
+    ReadingComicBooks spiderman{"spiderman"};
+    Dispatcher<listeners_1>::post(spiderman);
+    Dispatcher<listeners_2>::post(spiderman);
+    cout << endl;
     
-    cout << "listeners_2: ";
-    Dispatcher<listeners_2>::post(JustBeforeReturnEvent{});
+    cout << repr_1 + " has count: " << count<listeners_1>::value << endl;
+    cout << repr_2 + " has count: " << count<listeners_2>::value << endl;
+    cout << endl;
     
-    cout << "listeners_3: ";
-    Dispatcher<listeners_3>::post(JustBeforeReturnEvent{});
+    Dispatcher<listeners_1>::post(JustBeforeReturn{});
+    Dispatcher<listeners_2>::post(JustBeforeReturn{});
     return 0;
 }
