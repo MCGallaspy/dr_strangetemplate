@@ -52,8 +52,11 @@ int main() {
     using listeners_2 = type_list<CoutShouter, QuietGuy, ComicBookNerd>;
     string repr_2 = "type_list<CoutShouter, QuietGuy, ComicBookNerd>";
     
-    Dispatcher<listeners_1>::post(InTheBeginning{});
-    Dispatcher<listeners_2>::post(InTheBeginning{});
+    using dispatcher_1 = Dispatcher<listeners_1>;
+    using dispatcher_2 = Dispatcher<listeners_2>;
+    
+    dispatcher_1::post(InTheBeginning{});
+    dispatcher_2::post(InTheBeginning{});
     cout << endl;
     
     cout << repr_1 + " has tail: " + (has_tail<listeners_1>() ? "true" : "false") << endl;
@@ -61,15 +64,15 @@ int main() {
     cout << endl;
 
     ReadingComicBooks spiderman{"spiderman"};
-    Dispatcher<listeners_1>::post(spiderman);
-    Dispatcher<listeners_2>::post(spiderman);
+    dispatcher_1::post(spiderman);
+    dispatcher_2::post(spiderman);
     cout << endl;
     
     cout << repr_1 + " has count: " << count<listeners_1>::value << endl;
     cout << repr_2 + " has count: " << count<listeners_2>::value << endl;
     cout << endl;
     
-    Dispatcher<listeners_1>::post(JustBeforeReturn{});
-    Dispatcher<listeners_2>::post(JustBeforeReturn{});
+    dispatcher_1::post(JustBeforeReturn{});
+    dispatcher_2::post(JustBeforeReturn{});
     return 0;
 }

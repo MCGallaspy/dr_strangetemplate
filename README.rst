@@ -500,37 +500,257 @@ Listeners are recognized by providing them to the dispatcher *and* defining an a
 We'll start with an interface that we [13]_ want and work backwards to build it:
 
 .. code:: c++
-   
-    class JustBeforeReturnEvent {
+
+    class JustBeforeReturn {
         // ...
     }
     
     class CoutShouter {
     public:
-        void handle(const JustBeforeReturnEvent& evt) {
+        void handle(const JustBeforeReturn& evt) {
             std::cout << "Goodbye!\n";
         }
     }
     
+    template <typename Listeners>    
     class Dispatcher {
     public:
-        template <typename T>
-        static void post(const T&);
+        template <typename Evt>
+        static void post(const Evt&);
     }
+    
+    using listeners = type_list<CoutShouter>;
+    using dispatcher = Dispatcher<listeners>;
     
     int main() {
  
-        Dispatcher::post(JustBeforeReturnEvent{});
+        dispatcher::post(JustBeforeReturn{});
         return 0;
     }
 
-This is the most basic example of the *Do Something When X Happens* pattern -- just before the function returns,
-we want to call CoutShouter. The value of the pattern is in easily changing exactly what happens on some event.
-First, the dispatcher must be made aware of classes that could potentially handle events. Then when an event occurs,
-we'll check each class to see if it can handle the event:
+The *Do Something When X Happens* pattern involves three actors -- an event class (here ``JustBeforeReturn``) which
+is instantiated and provided to a ``Dispatcher``. The ``Dispatcher`` in turn provides the event to a list of types
+which handle it. In this case the list of types is really just one, ``CoutShouter``. Turns out this example will
+involve some nontrivial metaprogramming! Let's start with:
+
+type_list: A *metaclass* (if you will)
+**************************************
+
+Algorithms require data structures. The C++ standard library doesn't have data structures for types [14]_, so in
+order to do anything other than trivial operations we'll have to define them. And it's actually really
+simple, although perhaps a bit unfamiliar compared to runtime C++. Template metaprogramming is a
+**pure functional language** [15]_, so data structures look a little different than their runtime counterparts since
+runtime C++ is neither pure nor functional.
+The upshot is that we have plenty of rich examples to draw from. For instance, a type list could be defined as
+follows:
+
+.. code:: c++
+
+    // A forward declaration. This is required so that we can define specializations below.
+    template <typename... Args>
+    struct type_list;
+
+    // A list of one element just provides us with that element again!
+    // We dan access it through the type alias head.
+    template <typename Type>
+    struct type_list<Type> {
+        using head = Type;
+    };
+
+    // A list with *more* than one element has a head and a tail.
+    // Here the head is provided through inheritance,
+    // And the tail is defined as a list containing the rest of the elements!
+    template <typename Head, typename... Tail>
+    struct type_list<Head, Tail...> : type_list<Head> {
+        using tail = type_list<Tail...>;
+    };
+    
+    // Here's what it looks like in action.
+    using my_cool_list = type_list<int, double, int, char>;
+
+Since C++11 the `using keyword <http://en.cppreference.com/w/cpp/language/type_alias>`_
+can be used as a more natural ``typedef``. Using metaclasses [16]_ effectively requires good use of SFINAE, so before
+we go further I'm gonna let you in on a little trick [17]_ to make using SFINAE much less awkward:
+
+.. code:: c++
+
+    /* OMG awesome void_t metafunction will change your life */
+    template <typename...>
+    using void_t = void;
+
+The metafunction ``void_t`` just maps any number of type parameters into ``void``. It seems unremarkable at first
+until you realize that it can be used to invoke SFINAE since ``void_t``'s parameters must be well-formed! Here's
+a ``type_list`` metafunction that makes use of it:
+
+.. code:: c++
+
+    // Template with default parameter
+    template <typename T, typename = void>
+    struct count : std::integral_constant<int, 1> {};
+
+    // More specialized template will be chosen unless SFINAE removes it!
+    template <typename T>
+    struct count<T, void_t<typename T::tail>> :
+        std::integral_constant<int, 1 + count<typename T::tail>()> {};
+        
+    using my_cool_list = type_list<int, double, int, char>;
+    count<my_cool_list>::value; // 4;
+
+This is a really great metaprogramming technique to have up your sleeves! The first template is the default case.
+It has an unused (and thus unnamed) default template parameter -- meaning importantly that you can call it by passing
+in *one* template parameter only, the type that you're interested in. The metafunction ``count`` will return ``1`` 
+by default, but if the type passed in has a ``::tail`` like
+our ``type_list``, then it will peel it off and recursively call ``count`` until it hits the default case, adding
+one to its value each time.
+
+The template specialization below it is where the magic happens. ``void_t<typename T::tail>`` will invoke SFINAE if
+the template parameter ``T`` does not have a ``tail`` member! And since it is more specialized [18]_ the compiler
+will always prefer it unless SFINAE removes it from overload resolution. Inheriting from ``std::integral_constant`` 
+allows a type to be used in a numeric context, which we'll find very useful shortly.
+
+The big takeaway here is that ``void_t`` can be used to really easily determine if a type has some particular member.
+Along with ``enable_if`` (which can also be used for this purpose, but the implementation is much more verbose)
+we can start building much more complex data structures and metafunctions.
+
+Here's another metafunction that we'll be using:
+
+.. code:: c++
+
+    template <typename T>
+    struct has_tail :    /*    predicate     */  /*  if true   */ /*  if false */
+        std::conditional<(count<T>::value == 1), std::false_type, std::true_type>::type {};
+
+``has_tail`` uses ``std::conditional`` to inherit from either ``false_type`` or ``true_type`` depending on what the
+predicate evaluates to. It's the functional equivalent of the ternary operator, choosing the first type if its
+predicate is true, otherwise the second type. ``false_type`` and ``true_type`` are specializations of our friend
+``integral_constant`` that allow a class to be used in a boolean context.
+
+Dispatcher: The Dispatchening
+*****************************
+
+We've got nearly everything we need to write dispatcher. It looks like this:
+
+.. code:: c++
+
+    template <typename Handler, typename Evt, typename = void>
+    struct has_handler : std::false_type {};
+
+    template <typename Handler, typename Evt>
+    struct has_handler<Handler, Evt, decltype( Handler::handle( std::declval<const Evt&>() ) )> : 
+        std::true_type {};
+
+    template <typename Listeners>
+    class Dispatcher {
+        template <typename Evt, typename List, bool HasTail, bool HasHandler>
+        struct post_impl;
+        
+        /*
+        We will fill this in with implementation details.
+        */
+        
+    public:
+        template <typename Evt>
+        static void post(const Evt& t) {
+            constexpr bool has_tail_v = has_tail<Listeners>::value;
+            constexpr bool has_handler_v = has_handler<typename Listeners::head, Evt>::value;
+            post_impl<Evt, Listeners, has_tail_v, has_handler_v>::call(t);
+        }
+    };
+
+The ``has_handler`` metafunction determines if the parameter ``Handler`` has a static member function that takes
+a ``const Evt&`` parameter. Note again the default template parameter in the base case -- that's a sign that we're
+about to make use of SFINAE. And indeed, the specialization below it reveals one more SFINAE technique to add to our
+collection. Since C++11 the keyword ``decltype`` can be used to determine the declared type of an expression
+*without* evaluating that expression. You can use it to determine if a type has a member function (``handle`` here)
+that takes some arbitrary parameters (here ``const Evt&``). If the expression inside of ``decltype`` is well-formed
+then the result will be the function's return type. Otherwise SFINAE will be invoked!
+
+``std::declval`` is another standard library metafunction that we can use to instantiate types inside of ``declval``.
+The expression ``decltype( Handler::handle( const Evt& ) )`` because we need to call ``handle`` with an *instance* of
+``const Evt&``. The expression ``std::declval<const Evt&>()`` gives us just that [19]_.
+
+``Dispatcher::post`` defers its call to another template, ``post_impl`` which takes *four* parameters. Two of the
+parameters (``HasTail`` and ``HasHandler``) are completely determined by the ``Listeners`` parameter. The
+strategy for defining ``post_impl`` will be to write four template specializations that do different things depending
+on the values of ``HasTail`` and ``HasHandler``, which tell us if the ``type_list`` has a tail we need to peel off
+and whether ``type_list::head`` has an appropriate handler for ``Evt``, respectively.
+
+Note that ``post_impl`` is actually a *type* and we're really calling its static member function ``call``.
+That's because we rely on partial template specialization, which is *only* allowed with template classes and *not*
+template functions. Wrapping such functions in a class is a work-around.
+Here is the specialization for when both conditions are true:
+
+.. code::c++
+
+    // Case 1: Has tail, has a handler
+    template <typename Evt, typename List>
+    struct post_impl<Evt, List, true, true>
+    {
+        static void call(const Evt& evt) {
+            List::head::handle(evt);
+            
+            using Tail = typename List::tail;
+            
+            constexpr bool has_tail_v = has_tail<Tail>::value;
+            constexpr bool has_handler_v = has_handler<typename Tail::head, Evt>::value;
+            post_impl<Evt, Tail, has_tail_v, has_handler_v>::call(evt);
+        }
+    };
+
+If the ``::head`` of the list has an appropriate handler, then we call it!
+If the list has a ``::tail``, then we peel it off and call ``post_impl`` on the tail.
+We pass in conditions that allow the appropriate specializations to be chosen depending on whether the next element
+in the list has a handler and whether it has a ``::tail`` or not. And that's it [20]_!
+
+Wrapping up the Dispatcher example
+**********************************
+
+Here's some code that illustrates use of the *Do Something When X Happens* pattern:
+
+.. code:: c++
+
+    class CoutShouter {
+    public:
+        static void handle(const JustBeforeReturn& evt) {
+            cout << "Goodbye!" << endl;
+        }
+        
+        static void handle(const InTheBeginning& evt) {
+            cout << "Hello!" << endl;
+        }
+        
+        static void handle(const ReadingComicBooks& evt) {
+            cout << "Comics!" << endl;
+        }
+    };
+
+    class QuietGuy {};
+
+    class ComicBookNerd {
+    public:
+        static void handle(const ReadingComicBooks& evt) {
+            cout << "I love " + evt.title + "!" << endl;
+        }
+    };
+
+    int main() {    
+        using listeners = type_list<CoutShouter, QuietGuy, ComicBookNerd>;
+        
+        using dispatcher = Dispatcher<listeners>;
+        
+        dispatcher::post(InTheBeginning{});
+
+        ReadingComicBooks spiderman{"spiderman"};
+        dispatcher::post(spiderman);
+        
+        dispatcher::post(JustBeforeReturn{});
+        return 0;
+    }
+
+Complete code examples can be found in ``case_study_2.hpp`` and ``case_study_2.cpp``.
 
 Who are you?
-************
+------------
 
 Michael Gallaspy, variously a professional software engineer, substitute teacher, Peace Corps volunteer,
 whitewater raft guide, nature appreciater, enthusiastic exister, and enjoyer of Dr. Strangelove.
@@ -568,3 +788,24 @@ raise. ;)
     ``std::enable_if<true, int>::type`` is ``int``.
 
 .. [13] And by "we" of course I mean "I".
+
+.. [14] Although libraries like boost::hana do!
+
+.. [15] It really is **pure** in the sense that it has both no side-effects and its results are totally determined
+    by the inputs, and not affected by user's runtime decisions, the weather, and other random occurrences.
+    Other functional languages include Haskell and Scala.
+    
+.. [16] The term *metaclass* doesn't seem to be in common use among C++ template metaprogrammers. Which is a shame
+    because it sounds cool. I use it here in an imprecise sense to mean template classes.
+    
+.. [17] Actually the trick is well-known and is in the
+    `standard library <http://en.cppreference.com/w/cpp/types/void_t>`_ since C++17. See
+    `this great talk <https://www.youtube.com/watch?v=a0FliKwcwXE>`_ by Walter E. Brown.
+    
+.. [18] C++ will pick the most specialized template that matches an invocation.
+
+.. [19] Strangely enough ``declval`` is undefined. Only its *declaration* exists.
+    You can't use it to *actually* instantiate anything, it can only be used in unevaluated contexts.
+    I know of no use for it outside of ``decltype`` expressions.
+    
+.. [20] The other specializations fall down similarly.

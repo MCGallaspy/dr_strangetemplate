@@ -18,21 +18,12 @@ struct type_list<Head, Tail...> : type_list<Head> {
 };
 
 
-/* OMG awesome void_t metafunction will change your life */
+/* OMG this awesome void_t metafunction will change your life */
 template <typename...>
 using void_t = void;
 
 
 /* Type list metafunctions */
-
-
-/* has_tail predicate */
-template <typename, typename = void>
-struct has_tail : std::false_type {};
-
-template <typename T>
-struct has_tail<T, void_t<typename T::tail>> : std::true_type {};
-
 
 /* count */
 template <typename T, typename = void>
@@ -43,6 +34,12 @@ struct count<T, void_t<typename T::tail>> :
     std::integral_constant<int, 1 + count<typename T::tail>()> {};
 
     
+/* has_tail predicate */
+template <typename T>
+struct has_tail :    /*    predicate     */  /*  if true   */ /*  if false */
+    std::conditional<(count<T>::value == 1), std::false_type, std::true_type>::type {};
+
+
 /* has_handler predicate */
 template <typename Handler, typename Evt, typename = void>
 struct has_handler : std::false_type {};
