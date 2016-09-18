@@ -551,7 +551,7 @@ follows:
     struct type_list;
 
     // A list of one element just provides us with that element again!
-    // We dan access it through the type alias head.
+    // We can access it through the type alias head.
     template <typename Type>
     struct type_list<Type> {
         using head = Type;
@@ -623,7 +623,7 @@ Here's another metafunction that we'll be using:
 ``has_tail`` uses ``std::conditional`` to inherit from either ``false_type`` or ``true_type`` depending on what the
 predicate evaluates to. It's the functional equivalent of the ternary operator, choosing the first type if its
 predicate is true, otherwise the second type. ``false_type`` and ``true_type`` are specializations of our friend
-``integral_constant`` that allow a class to be used in a boolean context.
+``integral_constant`` that allow a class to be used in a boolean context [21]_.
 
 Dispatcher: The Dispatchening
 *****************************
@@ -657,8 +657,10 @@ We've got nearly everything we need to write dispatcher. It looks like this:
         }
     };
 
-The ``has_handler`` metafunction determines if the parameter ``Handler`` has a static member function that takes
-a ``const Evt&`` parameter. Note again the default template parameter in the base case -- that's a sign that we're
+The ``has_handler`` metafunction determines if the parameter ``Handler`` has a static member function ``handle``
+that takes
+a ``const Evt&`` parameter. Note again the default template parameter in the primary definition -- 
+that's a sign that we're
 about to make use of SFINAE. And indeed, the specialization below it reveals one more SFINAE technique to add to our
 collection. Since C++11 the keyword ``decltype`` can be used to determine the declared type of an expression
 *without* evaluating that expression. You can use it to determine if a type has a member function (``handle`` here)
@@ -666,7 +668,8 @@ that takes some arbitrary parameters (here ``const Evt&``). If the expression in
 then the result will be the function's return type. Otherwise SFINAE will be invoked!
 
 ``std::declval`` is another standard library metafunction that we can use to instantiate types inside of ``declval``.
-The expression ``decltype( Handler::handle( const Evt& ) )`` because we need to call ``handle`` with an *instance* of
+The expression ``decltype( Handler::handle( const Evt& ) )`` will produce an error
+because we need to call ``handle`` with an *instance* of
 ``const Evt&``. The expression ``std::declval<const Evt&>()`` gives us just that [19]_.
 
 ``Dispatcher::post`` defers its call to another template, ``post_impl`` which takes *four* parameters. Two of the
@@ -680,7 +683,7 @@ That's because we rely on partial template specialization, which is *only* allow
 template functions. Wrapping such functions in a class is a work-around.
 Here is the specialization for when both conditions are true:
 
-.. code::c++
+.. code:: c++
 
     // Case 1: Has tail, has a handler
     template <typename Evt, typename List>
@@ -809,3 +812,6 @@ raise. ;)
     I know of no use for it outside of ``decltype`` expressions.
     
 .. [20] The other specializations fall down similarly.
+
+.. [21] This is an inefficient implementation. Better would be to use SFINAE to check for a ``::tail`` member
+    directly. Here I use ``count`` only for compactness -- it becomes a one-liner!
