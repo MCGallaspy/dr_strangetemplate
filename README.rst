@@ -623,7 +623,7 @@ Here's another metafunction that we'll be using:
 ``has_tail`` uses ``std::conditional`` to inherit from either ``false_type`` or ``true_type`` depending on what the
 predicate evaluates to. It's the functional equivalent of the ternary operator, choosing the first type if its
 predicate is true, otherwise the second type. ``false_type`` and ``true_type`` are specializations of our friend
-``integral_constant`` that allow a class to be used in a boolean context [21]_.
+``integral_constant`` that allow a class to be used in a boolean context [19]_.
 
 Dispatcher: The Dispatchening
 *****************************
@@ -670,7 +670,7 @@ then the result will be the function's return type. Otherwise SFINAE will be inv
 ``std::declval`` is another standard library metafunction that we can use to instantiate types inside of ``declval``.
 The expression ``decltype( Handler::handle( const Evt& ) )`` will produce an error
 because we need to call ``handle`` with an *instance* of
-``const Evt&``. The expression ``std::declval<const Evt&>()`` gives us just that [19]_.
+``const Evt&``. The expression ``std::declval<const Evt&>()`` gives us just that [20]_.
 
 ``Dispatcher::post`` defers its call to another template, ``post_impl`` which takes *four* parameters. Two of the
 parameters (``HasTail`` and ``HasHandler``) are completely determined by the ``Listeners`` parameter. The
@@ -703,7 +703,7 @@ Here is the specialization for when both conditions are true:
 If the ``::head`` of the list has an appropriate handler, then we call it!
 If the list has a ``::tail``, then we peel it off and call ``post_impl`` on the tail.
 We pass in conditions that allow the appropriate specializations to be chosen depending on whether the next element
-in the list has a handler and whether it has a ``::tail`` or not. And that's it [20]_!
+in the list has a handler and whether it has a ``::tail`` or not. And that's it [21]_!
 
 Wrapping up the Dispatcher example
 **********************************
@@ -807,11 +807,11 @@ raise. ;)
     
 .. [18] C++ will pick the most specialized template that matches an invocation.
 
-.. [19] Strangely enough ``declval`` is undefined. Only its *declaration* exists.
+.. [19] This is an inefficient implementation. Better would be to use SFINAE to check for a ``::tail`` member
+    directly. Here I use ``count`` only for compactness -- it becomes a one-liner!
+    
+.. [20] Strangely enough ``declval`` is undefined. Only its *declaration* exists.
     You can't use it to *actually* instantiate anything, it can only be used in unevaluated contexts.
     I know of no use for it outside of ``decltype`` expressions.
     
-.. [20] The other specializations fall down similarly.
-
-.. [21] This is an inefficient implementation. Better would be to use SFINAE to check for a ``::tail`` member
-    directly. Here I use ``count`` only for compactness -- it becomes a one-liner!
+.. [21] The other specializations fall down similarly.
