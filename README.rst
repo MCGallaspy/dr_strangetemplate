@@ -750,7 +750,10 @@ Here's some code that illustrates use of the *Do Something When X Happens* patte
         return 0;
     }
 
+With template code like this it's reasonable to expect that the compiler could inline all of the ``Dispatcher`` code. [22]_
+
 Complete code examples can be found in ``case_study_2.hpp`` and ``case_study_2.cpp``.
+
 
 Who are you?
 ------------
@@ -815,3 +818,10 @@ raise. ;)
     I know of no use for it outside of ``decltype`` expressions.
     
 .. [21] The other specializations fall down similarly.
+
+.. [22] This will be implementation dependent. But when I ``make assembly`` and inspect the generated assembly of
+    ``<main>`` for case study 2, I only see one function call to a name-mangled
+    ``ComicBookNerd::handle(ReadingComicBooks const&)``!
+    Pretty compelling evidence that the rest was inlined.
+    For me this is totally dependent on optimization levels --
+    without ``-O3`` enabled it's clear from the assembly that *nothing* is inlined.
