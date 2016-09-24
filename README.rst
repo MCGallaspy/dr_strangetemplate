@@ -4,15 +4,19 @@ Dr. Strangetemplate
 Or How I Learned to Stop Worrying and Love C++ Templates
 --------------------------------------------------------
 
-Templates! Meta-programming! ``<``, ``>``, and ``typename``, oh my! The mere sight of these words/glyphs are enough
+Templates! Meta-programming! ``<``, ``>``, and ``typename``! The mere sight of these words/glyphs are enough
 to strike fear in the hearts of the meek and ignite righteous anger in the bosoms of well-intentioned code
 reviewers, who decry their use as too mysterious and arcane for good, plain production code. They may grudgingly
 admit that templates and 
 metaprogramming have their use in library code (as with the venerable ``std::vector`` and other containers) but
 surely are a code smell anywhere else.
 
-But no more! We live in a more enlightened age, and it's time to recognize the noble and simple truth of C++
-templates: **they help you write less code**. Moreover with modern C++ features, template code is readable,
+But no more! We live in a more enlightened age, and it's time to recognize the noble and simple truth of post-C++11
+templates: **they help you write better code**. Templated code is type-safe, expressive, and can increase runtime
+performance by both shifting computation to compile-time and enabling optimizations that can't be applied to
+equivalent runtime code.
+
+With modern C++ features, template code is readable,
 maintainable, sustainable [1]_, biodegradable [2]_, and fully embraceable [3]_!
 A well-rounded C++ programmer should be able to identify when to use this powerful language feature.
 
@@ -166,7 +170,7 @@ programming language, one that's executed entirely at compile time and deals wit
 
 You can get a lot of mileage out of basic templates like above.
 But if you understand metaprogramming techniques you can make good use of the standard library [7]_, libraries like
-`boost::hana <http://www.boost.org/doc/libs/1_61_0/libs/hana/doc/html/index.html>`_,
+`boost::hana <http://www.boost.org/doc/libs/release/libs/hana/doc/html/index.html>`_,
 and write your own metafunctions for great profit. So read on if you wish to continue the brave march into
 template modernity!
 
@@ -868,6 +872,30 @@ Here's ``at`` in action:
     }
 
 Example code can be found in case_study_3.hpp and case_study_3.cpp.
+
+Further reading
+---------------
+
+Metaprogramming is about computing with types in ways that aren't possible with runtime C++.
+
+If you're wondering *why* computing with types is even necessary, outside of the performance benefits that
+metaprogramming can enable, then here's a presentation on 
+[using types effectively in C++.](http://www.elbeno.com/presentations/using-types-effectively/presentation.html#/slide-orgheadline82)
+
+If you're thinking about metaprogramming in production code, or if you just want some great examples of 
+metaprogramming in action, take a look at the [boost::hana user manual](www.boost.org/doc/libs/release/libs/hana/).
+
+Why did you write this guide?
+-----------------------------
+
+I wanted to learn about C++ template metaprogramming, but many of the resources I found were either:
+
+* In reference to pre-C++11, which introduces a lot of new features for metaprogramming.
+* Too simple. (Not another factorial example!)
+* Too advanced.
+
+My aim is for this guide to fill a gap between "too simple" and "too advanced" by showing short but non-trivial
+applications of metaprogramming.
 
 Who are you?
 ------------
