@@ -754,8 +754,8 @@ With template code like this it's reasonable to expect that the compiler could i
 
 Complete code examples can be found in ``case_study_2.hpp`` and ``case_study_2.cpp``.
 
-A compile-time container metaclass
-----------------------------------
+Case study 3: A compile-time container metaclass
+------------------------------------------------
 
 The final case study for now is meant to give a taste of more advanced metaprogramming.
 The ad-hoc ``type_list`` data structure
