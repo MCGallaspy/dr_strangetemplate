@@ -880,10 +880,10 @@ Metaprogramming is about computing with types in ways that aren't possible with 
 
 If you're wondering *why* computing with types is even necessary, outside of the performance benefits that
 metaprogramming can enable, then here's a presentation on 
-[using types effectively in C++.](http://www.elbeno.com/presentations/using-types-effectively/presentation.html#/slide-orgheadline82)
+(using types effectively in C++.)[http://www.elbeno.com/presentations/using-types-effectively/presentation.html#/slide-orgheadline82]
 
 If you're thinking about metaprogramming in production code, or if you just want some great examples of 
-metaprogramming in action, take a look at the [boost::hana user manual](www.boost.org/doc/libs/release/libs/hana/).
+metaprogramming in action, take a look at the (boost::hana user manual)[www.boost.org/doc/libs/release/libs/hana/].
 
 Why did you write this guide?
 -----------------------------
