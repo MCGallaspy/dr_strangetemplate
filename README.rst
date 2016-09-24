@@ -765,7 +765,7 @@ container for types?
 Turns out the answer is not only **"Heck yes!"** but that lots of library writers have already done it!
 So go use those in production code instead of writing your own.
 But if you want to learn a little bit about how those implementations might work, read on. We'll use some
-features from the C++14 `std::` namespace, like ``integer_sequence`` -- but they're features that *could* have been
+features from the C++14 ``std::`` namespace, like ``integer_sequence`` -- but they're features that *could* have been
 implemented in C++11.
 
 First we must note that with purely functional data structures the naive implementation of a random-access list has
