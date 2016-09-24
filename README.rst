@@ -867,6 +867,8 @@ Here's ``at`` in action:
         return 0;
     }
 
+Example code can be found in case_study_3.hpp and case_study_3.cpp.
+
 Who are you?
 ------------
 
