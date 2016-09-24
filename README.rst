@@ -754,6 +754,118 @@ With template code like this it's reasonable to expect that the compiler could i
 
 Complete code examples can be found in ``case_study_2.hpp`` and ``case_study_2.cpp``.
 
+A compile-time container metaclass
+----------------------------------
+
+The final case study for now is meant to give a taste of more advanced metaprogramming.
+The ad-hoc ``type_list`` data structure
+structure above is fine and dandy, but can we create an honest-to-goodness ``std::vector``-style random access
+container for types?
+
+Turns out the answer is not only **"Heck yes!"** but that lots of library writers have already done it!
+So go use those in production code instead of writing your own.
+But if you want to learn a little bit about how those implementations might work, read on. We'll use some
+features from the C++14 `std::` namespace, like ``integer_sequence`` -- but they're features that *could* have been
+implemented in C++11.
+
+First we must note that with purely functional data structures the naive implementation of a random-access list has
+really bad (linear) performance for accessing an arbitrary element. This might seem surprising since C-style arrays
+trivially have constant-time access to arbitrary elements, so why shouldn't type lists? Indeed for a fixed-length
+type list the obvious implementation is to reflect the arguments back for constant-time element access:
+
+.. code:: c++
+
+    template <typename Zero, typename One, typename Two>
+    struct three_tuple {
+        using zero = Zero;
+        using one = One;
+        using two = Two;
+    };
+
+In order to do this with an arbitrary number of type parameters, we'll make each *element* of the list a distinct
+base class, and implement an accessor function that casts the tuple to the appropriate class [23]_. This is possible
+due to the rules of template argument deduction, which we'll examine in more detail later.
+
+.. code:: c++
+
+    template <size_t Index, typename Type>
+    struct element {
+        using type = Type;
+    };
+
+    template <typename Indices, typename... Types>
+    struct tuple_impl;
+
+First we define an ``element``. Its ``Type`` is the payload, and the unused ``Index`` parameter will turn out to be
+critical to the template argument deduction for the accessor function. The forward declaration of ``tuple_impl``
+will match a ``std::index_sequence`` and its variadic parameter will become a pack of ``element``s.
+
+.. code:: c++
+
+    template <std::size_t... Ns, typename... Types>
+    struct tuple_impl<std::index_sequence<Ns...>, Types...> : element<Ns, Types>... {};
+
+This specialization is the heart of ``tuple_impl``. Note that the first parameter of the specialization is *not* the
+parameter pack ``Ns``, but rather it's the ``std::index_sequence<Ns...>``. This demonstrates the purpose of
+``std::index_sequence`` -- when you instantiate a template with an ``index_sequence`` then it will match a
+specialization like above. Then through template argument deduction the *values* of the sequence will be *unpacked*
+into the parameter ``Ns``. If you're familiar with other functional languages, this is a C++ template
+metaprogramming technique for *pattern matching*!
+
+Note also that ``tuple_impl`` inherits from some number of ``element`` specializations. The pack expansion will work
+on ``Ns`` and ``Types`` simultaneously to produce a sequence like ``element<0, foo>``, ``element<1, bar>``, etc.
+
+.. code:: c++
+
+    template <typename... Types>
+    struct tuple : tuple_impl<std::make_index_sequence<sizeof...(Types)>, Types...> {};
+
+Now we actually define ``tuple``, which just takes a variadic parameter ``Types`` and constructs a ``tuple_impl``
+from it. For instance ``tuple<int, int, char*>`` will have the base classes
+``tuple_impl<std::index_sequence<0, 1, 2>, int, int, char*>``, ``element<0, int>``, ``element<1, int>``, and
+``element<2, char*>``.
+
+That's it! But if we try to access the ``::type`` of a tuple it's ambiguous since more than one base class defines
+that type alias.
+We have to cast a tuple to *one* of its base classes in order to unambiguously access it. If we know exactly what one
+of the base classes is we could ``static_cast``, e.g. ``static_cast<element<1, int>>(my_tuple_instance)``. But that
+defeats the purpose because we *don't* know what the second
+template parameter of ``element`` will be. Here's where we'll rely
+on template argument deduction. We'll *declare* a function that takes the base class
+we want to select as a parameter and returns its ``::type``:
+
+.. code:: c++
+
+    template <std::size_t N, typename T>
+    typename element<N, T>::type get(const element<N, T> &);
+
+If we instantiate this template for example with ``get<1>(tuple<int, int, char*>())`` then 
+we're telling the compiler to conisder calling ``get<1, T>(const element<1, T> &)``.
+Since the argument is a class that is *derived* from ``element<1, T>``, then it can deduce unambiguously what
+``T`` is -- in this case ``int``. And we don't actually have to supply a definition of ``get``, because
+we're just using it in an unevaluated context for the template argument deduction:
+
+.. code:: c++
+
+    template <std::size_t N, typename Tuple>
+    using at = decltype(get<N>(std::declval<Tuple>()));
+
+The template ``at`` finds the return type of ``get`` if we supplied it with the parameters ``N`` and ``Tuple``.
+Here's ``at`` in action:
+
+.. code:: c++
+
+    int main() {
+        using my_tuple = tuple<int, char, char*>;
+        
+        using elt_0 = at<0, my_tuple>;
+        std::is_same<elt_0, char>::value; // false
+        
+        using elt_1 = at<1, my_tuple>;
+        std::is_same<elt_1, char>::value; // true
+
+        return 0;
+    }
 
 Who are you?
 ------------
@@ -825,3 +937,5 @@ raise. ;)
     Pretty compelling evidence that the rest was inlined.
     For me this is totally dependent on optimization levels --
     without ``-O3`` enabled it's clear from the assembly that *nothing* is inlined.
+
+.. [23] I got this clever idea from the author of boost::hana!
