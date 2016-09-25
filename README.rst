@@ -884,7 +884,7 @@ metaprogramming can enable, then here's a presentation on
 
 If you're thinking about metaprogramming in production code, or if you just want some great examples of 
 metaprogramming in action, take a look at the 
-`boost::hana user manual <www.boost.org/doc/libs/release/libs/hana/>`_.
+`boost::hana user manual <http://www.boost.org/doc/libs/release/libs/hana/>`_.
 
 Why did you write this guide?
 -----------------------------
