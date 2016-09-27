@@ -68,8 +68,11 @@ int main() {
     dispatcher_2::post(spiderman);
     cout << endl;
     
-    cout << repr_1 + " has count: " << count<listeners_1>::value << endl;
-    cout << repr_2 + " has count: " << count<listeners_2>::value << endl;
+    cout << repr_1 + " has count: " << different_count<listeners_1>::value << endl;
+    cout << repr_2 + " has count: " << different_count<listeners_2>::value << endl;
+    cout << "type_list<> has count: " << different_count<type_list<>>::value << endl;
+    // Another error -- we can *only* instantiate different_count with a type_list.
+    // cout << "<int, int, double> has count: " << different_count<int, int, double>::value << endl;
     cout << endl;
     
     dispatcher_1::post(JustBeforeReturn{});

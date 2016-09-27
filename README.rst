@@ -490,7 +490,7 @@ you'll probably want to use a library like
 the older `MPL <http://www.boost.org/doc/libs/1_61_0/libs/mpl/doc/index.html>`_
 or the newer `boost::hana <http://www.boost.org/doc/libs/1_61_0/libs/hana/doc/html/index.html>`_.
 
-More case studies to come!
+Some readers have taken umbrage with this example -- see my thoughts in the issues.
 
 Case Study 2: Building an awesome event interface
 -------------------------------------------------
@@ -616,6 +616,24 @@ The big takeaway here is that ``void_t`` can be used to really easily determine 
 Along with ``enable_if`` (which can also be used for this purpose, but the implementation is much more verbose)
 we can start building much more complex data structures and metafunctions.
 
+Some readers have pointed out that ``count`` can be implemented with fewer template instantiations.
+And they're right! So check out this alternate implementation that doesn't use SFINAE at all:
+
+.. code:: c++
+
+    /* Alternate implementation uses fewer template instantiations */
+    template <typename... Elts>
+    struct different_count;
+
+    template <typename... Elts>
+    struct different_count<type_list<Elts...>> : std::integral_constant<int, sizeof...(Elts)> {};
+
+We only define a specialization here -- you can't instantiate ``different_count`` with anything other than a
+``type_list``. This is an example of pattern matching, which we'll see used to good effect in the next example!
+The interesting thing to note here is that matching the pattern ``type_list<Elts...>`` actually unpacks ``Elts`` so
+that we can use it elsewhere in the template, namely as the argument of ``sizeof...``, which counts the number of
+types in a parameter pack.
+    
 Here's another metafunction that we'll be using:
 
 .. code:: c++

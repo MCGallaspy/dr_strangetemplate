@@ -33,11 +33,17 @@ template <typename T>
 struct count<T, void_t<typename T::tail>> :
     std::integral_constant<int, 1 + count<typename T::tail>()> {};
 
+/* Alternate implementation uses fewer template instantiations */
+template <typename... Elts>
+struct different_count;
+
+template <typename... Elts>
+struct different_count<type_list<Elts...>> : std::integral_constant<int, sizeof...(Elts)> {};
     
 /* has_tail predicate */
 template <typename T>
-struct has_tail :    /*    predicate     */  /*  if true   */ /*  if false */
-    std::conditional<(count<T>::value == 1), std::false_type, std::true_type>::type {};
+struct has_tail :    /*         predicate          */  /*  if true   */ /*  if false */
+    std::conditional<(different_count<T>::value <= 1), std::false_type, std::true_type>::type {};
 
 
 /* has_handler predicate */
