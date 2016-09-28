@@ -39,7 +39,7 @@ int major(MyCoolStruct *input, int param1, int param2, int param3) {
 /* Our code */
 
 void print_success() {
-        printf("Much success.\n");
+    printf("Much success.\n");
 }
 
 void print_error(int err) {
