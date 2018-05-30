@@ -86,7 +86,7 @@ search-and-replace, and testing each change over and over again. Dear beleaguere
     foo, 4, 2); /* params */
 
     api_exec(jack,
-    total_commitment_to_my_foo,  /* on success - foo is passed automatically to this function */
+    preemptive_strike,  /* on success - foo is passed automatically to this function */
     log_it, /* on error */
     foo, 3, 6); /* params */
 
